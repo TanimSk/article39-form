@@ -54,8 +54,8 @@ class UploadFile(APIView):
             )
 
         cloudinary.config(
-            cloud_name="dhhxvf13v",
-            api_key="759367851999677",
+            cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+            api_key=settings.CLOUDINARY_API_KEY,
             api_secret=settings.CLOUDINARY_API_SECRET,
             secure=True,
         )
