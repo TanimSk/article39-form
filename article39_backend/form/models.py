@@ -86,9 +86,6 @@ class Artist(models.Model):
     # Payment Preferences
     preferred_payment_method = models.CharField(max_length=255, blank=True, null=True)
 
-    def __str__(self):
-        return self.full_name_english or self.stage_name
-
     def save(self, *args, **kwargs):
         if self.email == "":
             self.email = None  # Convert empty string to NULL
