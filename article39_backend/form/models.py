@@ -3,6 +3,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db.models import JSONField
 from uuid import uuid4
 
+
 class Artist(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
 
@@ -14,15 +15,21 @@ class Artist(models.Model):
 
     # Profile & Genre
     GENRE_CHOICES = [
-        ('Rock', 'Rock'),
-        ('Folk', 'Folk'),
-        ('Pop', 'Pop'),
-        ('Jazz', 'Jazz'),
-        ('Classical', 'Classical'),
+        ("Rock", "Rock"),
+        ("Folk", "Folk"),
+        ("Pop", "Pop"),
+        ("Jazz", "Jazz"),
+        ("Classical", "Classical"),
     ]
-    primary_genre = models.CharField(max_length=50, choices=GENRE_CHOICES, blank=True, null=True)
-    secondary_genre = models.CharField(max_length=50, choices=GENRE_CHOICES, blank=True, null=True)
-    performance_languages = ArrayField(models.CharField(max_length=50), blank=True, null=True)
+    primary_genre = models.CharField(
+        max_length=50, choices=GENRE_CHOICES, blank=True, null=True
+    )
+    secondary_genre = models.CharField(
+        max_length=50, choices=GENRE_CHOICES, blank=True, null=True
+    )
+    performance_languages = ArrayField(
+        models.CharField(max_length=50), blank=True, null=True
+    )
 
     # Contact Details
     email = models.EmailField(unique=True, blank=True, null=True)
@@ -32,7 +39,9 @@ class Artist(models.Model):
 
     # Social / Online Presence
     website = models.URLField(blank=True, null=True)
-    social_links = ArrayField(models.URLField(), blank=True, null=True)  # Multiple social media links
+    social_links = ArrayField(
+        models.URLField(), blank=True, null=True
+    )  # Multiple social media links
 
     # Bio / Artist Statement
     bio = models.TextField(max_length=1000, blank=True, null=True)
@@ -40,11 +49,17 @@ class Artist(models.Model):
     # Portfolio
     portfolio_description = models.TextField(blank=True, null=True)
     credits = models.CharField(max_length=255, blank=True, null=True)
-    content_links = ArrayField(models.URLField(), blank=True, null=True)  # Multiple content links
-    content_uploads = ArrayField(models.URLField(), blank=True, null=True)  # Now stores URLs instead of file uploads
+    content_links = ArrayField(
+        models.URLField(), blank=True, null=True
+    )  # Multiple content links
+    content_uploads = ArrayField(
+        models.URLField(), blank=True, null=True
+    )  # Now stores URLs instead of file uploads
 
     # Equipment & Technical Requirements
-    instruments = ArrayField(models.CharField(max_length=255), blank=True, null=True)  # List of instruments
+    instruments = ArrayField(
+        models.CharField(max_length=255), blank=True, null=True
+    )  # List of instruments
     technical_preferences = models.TextField(blank=True, null=True)
 
     # Availability / Commitment
@@ -60,10 +75,11 @@ class Artist(models.Model):
     # },
     #  ....]
     available_timelines = ArrayField(JSONField(), blank=True, null=True)
-    
 
     # Verification & Agreements
-    government_id_upload = models.URLField(blank=True, null=True)  # Now stores URL instead of file upload
+    government_id_upload = models.URLField(
+        blank=True, null=True
+    )  # Now stores URL instead of file upload
     consent_promotion = models.BooleanField(default=False, blank=True, null=True)
     agree_terms = models.BooleanField(default=False, blank=True, null=True)
 
@@ -72,3 +88,8 @@ class Artist(models.Model):
 
     def __str__(self):
         return self.full_name_english or self.stage_name
+
+    def save(self, *args, **kwargs):
+        if self.email == "":
+            self.email = None  # Convert empty string to NULL
+        super().save(*args, **kwargs)
