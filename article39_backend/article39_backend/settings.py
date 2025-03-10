@@ -31,7 +31,7 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True
-CORS
+
 # CSRF ORIGINS
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
