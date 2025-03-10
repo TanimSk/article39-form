@@ -20,6 +20,7 @@ class Artist(models.Model):
         ("Pop", "Pop"),
         ("Jazz", "Jazz"),
         ("Classical", "Classical"),
+        ("Hip-Hop", "Hip-Hop"),
     ]
     primary_genre = models.CharField(
         max_length=50, choices=GENRE_CHOICES, blank=True, null=True
