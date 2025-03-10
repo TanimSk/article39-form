@@ -8,10 +8,7 @@ class ArtistSerializer(serializers.ModelSerializer):
     content_links = serializers.ListField(child=serializers.URLField(), required=False)
     content_uploads = serializers.ListField(child=serializers.URLField(), required=False)  # Changed from FileField to URLField
     instruments = serializers.ListField(child=serializers.CharField(max_length=255), required=False)
-    available_from_times = serializers.ListField(child=serializers.TimeField(), required=False)
-    available_to_times = serializers.ListField(child=serializers.TimeField(), required=False)
-    available_from_dates = serializers.ListField(child=serializers.DateField(), required=False)
-    available_to_dates = serializers.ListField(child=serializers.DateField(), required=False)
+    available_timelines = serializers.ListField(child=serializers.JSONField(), required=False)
     
     # Updating government_id_upload field
     government_id_upload = serializers.URLField(required=False, allow_null=True)  # Changed from FileField to URLField

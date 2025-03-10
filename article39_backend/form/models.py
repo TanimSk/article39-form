@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.fields import ArrayField, JSONField
 from uuid import uuid4
 
 class Artist(models.Model):
@@ -47,10 +47,19 @@ class Artist(models.Model):
     technical_preferences = models.TextField(blank=True, null=True)
 
     # Availability / Commitment
-    available_from_times = ArrayField(models.TimeField(), blank=True, null=True)
-    available_to_times = ArrayField(models.TimeField(), blank=True, null=True)
-    available_from_dates = ArrayField(models.DateField(), blank=True, null=True)
-    available_to_dates = ArrayField(models.DateField(), blank=True, null=True)
+    # [{
+    #   time: {
+    #     from: "10:00AM",
+    #     to: "12:00PM",
+    #   },
+    #   date: {
+    #     from: "20-03-2025",
+    #     to: "30-03-2025",
+    #   },
+    # },
+    #  ....]
+    available_timelines = ArrayField(JSONField(), blank=True, null=True)
+    
 
     # Verification & Agreements
     government_id_upload = models.URLField(blank=True, null=True)  # Now stores URL instead of file upload
