@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -30,10 +31,11 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True
+CORS
 # CSRF ORIGINS
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
-    "https://article39-api.ongshak.com",    
+    "https://article39-api.ongshak.com",
 ]
 
 
@@ -54,7 +56,7 @@ INSTALLED_APPS = [
     "dj_rest_auth",
     "django.contrib.sites",
     "allauth",
-    "allauth.account",    
+    "allauth.account",
     "dj_rest_auth.registration",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
@@ -65,6 +67,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -99,8 +102,8 @@ WSGI_APPLICATION = "article39_backend.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "article39",                
-        "USER": os.getenv("USERNAME_DB"),        
+        "NAME": "article39",
+        "USER": os.getenv("USERNAME_DB"),
         "PASSWORD": os.getenv("PASSWORD_DB"),
         "HOST": "localhost",
         "PORT": "",
