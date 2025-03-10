@@ -1,5 +1,6 @@
 from django.db import models
-from django.contrib.postgres.fields import ArrayField, JSONField
+from django.contrib.postgres.fields import ArrayField
+from django.db.models import JSONField
 from uuid import uuid4
 
 class Artist(models.Model):
