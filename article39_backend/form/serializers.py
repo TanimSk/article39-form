@@ -11,7 +11,7 @@ class ArtistSerializer(serializers.ModelSerializer):
     available_timelines = serializers.ListField(child=serializers.JSONField(), required=False)
     
     # Updating government_id_upload field
-    government_id_upload = serializers.URLField(required=False, allow_null=True)  # Changed from FileField to URLField
+    government_id_upload = serializers.URLField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = Artist
