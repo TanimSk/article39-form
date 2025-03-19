@@ -1,7 +1,10 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
 from django.db.models import JSONField
 from uuid import uuid4
+from datetime import datetime
+from form.validator import validate_budget_breakdown
 
 
 class Artist(models.Model):
@@ -91,3 +94,83 @@ class Artist(models.Model):
         if self.email == "":
             self.email = None  # Convert empty string to NULL
         super().save(*args, **kwargs)
+
+
+class FilmMaker(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+
+    basic_info = models.JSONField()
+    project_info = models.JSONField()
+    primary_contact_info = models.JSONField()
+    brief_synopsis = models.TextField(null=True, blank=True)
+    production_overview = models.JSONField()
+    budget_breakdown = models.JSONField()
+    payment_terms = models.JSONField()
+    additional_details = models.JSONField()
+    
+    def clean(self):
+        self.validate_basic_info()
+        self.validate_project_info()
+        self.validate_primary_contact_info()
+        self.validate_production_overview()
+        self.validate_budget_breakdown()
+        self.validate_payment_terms()
+        self.validate_additional_details()
+
+    def validate_basic_info(self):
+        required_keys = ["full_name_en", "full_name_bn", "dob", "gender", "email", "phone", "address", "district", "post_office", "postal_code"]
+        if self.basic_info:
+            for key in required_keys:
+                if key not in self.basic_info:
+                    raise ValidationError(f"Missing '{key}' in basic_info.")
+            
+            dob = self.basic_info.get("dob")
+            if dob:
+                try:
+                    datetime.strptime(dob, "%Y-%m-%d")
+                except ValueError:
+                    raise ValidationError("The 'dob' field must be a valid date in YYYY-MM-DD format.")
+
+    def validate_project_info(self):
+        if self.project_info:
+            if not all(key in self.project_info for key in ["project_title", "company_name"]):
+                raise ValidationError("Project info must include 'project_title' and 'company_name'.")
+
+    def validate_primary_contact_info(self):
+        if self.primary_contact_info:
+            if not all(key in self.primary_contact_info for key in ["contact_name", "email", "phone"]):
+                raise ValidationError("Primary contact info must include 'contact_name', 'email', and 'phone'.")
+
+    def validate_production_overview(self):
+        if self.production_overview:
+            if not all(key in self.production_overview for key in ["genre", "est_runtime", "expected_shoot_days"]):
+                raise ValidationError("Production overview must include 'genre', 'est_runtime', and 'expected_shoot_days'.")
+            if "locations" in self.production_overview:
+                if not all(isinstance(loc, dict) and "type" in loc and "location" in loc for loc in self.production_overview["locations"]):
+                    raise ValidationError("Each location in production overview must be a dictionary with 'type' and 'location'.")
+    
+    def validate_budget_breakdown(self):
+        if self.budget_breakdown:
+            try:
+                validate_budget_breakdown(self.budget_breakdown)
+            except ValidationError as e:
+                raise ValidationError(f"Budget Breakdown Error: {e}")
+    
+    def validate_payment_terms(self):
+        if self.payment_terms:
+            if "total_budget" not in self.payment_terms or "payment_schedule" not in self.payment_terms:
+                raise ValidationError("Payment terms must include 'total_budget' and 'payment_schedule'.")
+    
+    def validate_additional_details(self):
+        if self.additional_details:
+            if "note" not in self.additional_details or "attachments" not in self.additional_details:
+                raise ValidationError("Additional details must include 'note' and 'attachments'.")
+            if not isinstance(self.additional_details.get("attachments"), list):
+                raise ValidationError("Attachments must be a list.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+
+

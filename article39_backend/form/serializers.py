@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from form.models import Artist
+from form.models import Artist, FilmMaker
 
 class ArtistSerializer(serializers.ModelSerializer):
     # Handling ArrayFields properly
@@ -28,3 +28,10 @@ class ArtistSerializer(serializers.ModelSerializer):
         if 'performance_languages' in data and not data['performance_languages']:
             raise serializers.ValidationError("At least one performance language must be selected.")
         return data
+
+
+class FilmMakerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FilmMaker
+        fields = '__all__'
+

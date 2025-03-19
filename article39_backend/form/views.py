@@ -1,8 +1,8 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Artist
-from .serializers import ArtistSerializer
+from .models import Artist, FilmMaker
+from .serializers import ArtistSerializer, FilmMakerSerializer
 import cloudinary
 import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
@@ -41,6 +41,38 @@ class ArtistView(APIView):
                 {"success": True, **serializer.data}, status=status.HTTP_201_CREATED
             )
 
+
+class FilmMakerView(APIView):
+    def post(self, request):
+        serializer = FilmMakerSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {"success": True, "data":serializer.data}, status=status.HTTP_201_CREATED
+            )
+        return Response(
+            {"success": False, "message": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    
+    def get(self, request, *args, **kwargs):
+        film_maker_id = request.GET.get("id", None)
+        if film_maker_id:
+            try:
+                film_maker = FilmMaker.objects.get(id=film_maker_id)
+                serializer = FilmMakerSerializer(film_maker)
+                return Response(serializer.data, status=status.HTTP_200_OK) 
+            except FilmMaker.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "FilmMaker not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            film_makers = FilmMaker.objects.all()
+            serializer = FilmMakerSerializer(film_makers, many=True)
+            return Response(
+                {"success": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
 
 
 class UploadFile(APIView):
