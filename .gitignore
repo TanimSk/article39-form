@@ -3,6 +3,6 @@ Lib
 Scripts
 __pycache__
 pyvenv.cfg
-form/migrations/*
-!form/migrations/__init__.py
+article39_backend/form/migrations/*
+!article39_backend/form/migrations/__init__.py
 venv
