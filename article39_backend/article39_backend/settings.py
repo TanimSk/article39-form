@@ -28,9 +28,21 @@ SECRET_KEY = "django-insecure-1h^8!il_veubru(39v_xitp9$^is7d4^47b++t#7zd=3-sx-9w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "article39-api.ongshak.com",
+    "artist-onboarding-form.vercel.app",
+]
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Adjust the port if needed (e.g., for React frontend)
+    "http://127.0.0.1:3000",
+    "https://article39-api.ongshak.com",
+    "https://artist-onboarding-form.vercel.app",
+]
+
 
 # CSRF ORIGINS
 CSRF_TRUSTED_ORIGINS = [
