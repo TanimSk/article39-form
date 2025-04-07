@@ -74,6 +74,8 @@ INSTALLED_APPS = [
     "corsheaders",
     # Custom Apps
     "form.apps.FormConfig",
+    "artist.apps.ArtistConfig",
+    "administrator.apps.AdministratorConfig",
 ]
 
 MIDDLEWARE = [
