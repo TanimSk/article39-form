@@ -25,4 +25,19 @@ class Song(models.Model):
     title = models.CharField(max_length=255)
     song_url = models.URLField()
     duration = models.IntegerField()
+    GENRE = (
+        ("pop", "Pop"),
+        ("rock", "Rock"),
+        ("hip-hop", "Hip-Hop"),
+        ("jazz", "Jazz"),
+        ("metal", "Metal"),
+        ("folk", "Folk"),
+    )
+    genre = models.CharField(max_length=50, choices=GENRE)
+    STATUS = (
+        ("PENDING", "Pending"),
+        ("APPROVED", "Approved"),
+        ("REJECTED", "Rejected"),
+    )
+    status = models.CharField(max_length=50, choices=STATUS, default="PENDING")
     added_at = models.DateTimeField(auto_now_add=True)

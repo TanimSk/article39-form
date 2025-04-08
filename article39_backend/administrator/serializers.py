@@ -1,5 +1,6 @@
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
+from administrator.models import Gig
 
 
 class CustomPasswordChangeSerializer(serializers.Serializer):
@@ -19,3 +20,10 @@ class CustomPasswordChangeSerializer(serializers.Serializer):
         if not user.check_password(value):
             raise serializers.ValidationError("Old password is incorrect.")
         return value
+
+
+class GigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Gig
+        fields = "__all__"
+        read_only_fields = ["artist"]
