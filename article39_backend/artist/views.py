@@ -46,6 +46,22 @@ class EnlistSongAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
 
+        # single song
+        if request.GET.get("id"):
+            song = request.user.artist_profile.songs.filter(
+                id=request.GET.get("id")
+            ).first()
+            if song:
+                serializer = SongSerializer(song)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"success": False, "message": "Song not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        # all songs
+        # filter by status
         if request.GET.get("status") == "all":
             queryset = request.user.artist_profile.songs.all()
         elif request.GET.get("status") == "pending":

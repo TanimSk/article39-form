@@ -1,8 +1,6 @@
 from django.urls import path
+from artist.views import EnlistSongAPIView
 
 urlpatterns = [
-    # Add your artist-related URLs here
-    # Example:
-    # path('artists/', ArtistListView.as_view(), name='artist-list'),
-    # path('artists/<int:pk>/', ArtistDetailView.as_view(), name='artist-detail'),
+    path("song/", EnlistSongAPIView.as_view(), name="enlist-song"),
 ]

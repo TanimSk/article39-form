@@ -210,7 +210,7 @@ AUTHENTICATION_BACKENDS = (
     # `allauth` specific    authentication methods, such as login by e-mail
     "allauth.account.auth_backends.AuthenticationBackend",
 )
-
+AUTH_USER_MODEL = "administrator.User"
 SITE_ID = 1
 SOCIALACCOUNT_QUERY_EMAIL = True
 ACCOUNT_AUTHENTICATION_METHOD = "email"

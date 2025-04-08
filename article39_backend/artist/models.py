@@ -17,6 +17,7 @@ class Artist(models.Model):
 
 
 class Song(models.Model):
+    id = models.UUIDField(primary_key=True, editable=False)
     artist = models.ForeignKey(
         Artist,
         on_delete=models.CASCADE,
