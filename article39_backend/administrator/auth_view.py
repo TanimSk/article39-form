@@ -40,6 +40,15 @@ class LoginWthPermission(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
+        if user.is_artist and not user.artist_profile.is_verified:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Your account is deactivated, please contact admin",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         # Generate tokens
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)

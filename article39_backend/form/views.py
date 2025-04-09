@@ -27,7 +27,7 @@ class ArtistView(APIView):
                 )
         else:
             # Retrieve all artists
-            artists = Artist.objects.all()
+            artists = Artist.objects.all().order_by("-created_at")
             serializer = ArtistSerializer(artists, many=True)
             return Response(
                 {"success": True, "data": serializer.data}, status=status.HTTP_200_OK
@@ -68,7 +68,7 @@ class FilmMakerView(APIView):
                     status=status.HTTP_404_NOT_FOUND,
                 )
         else:
-            film_makers = FilmMaker.objects.all()
+            film_makers = FilmMaker.objects.all().order_by("-created_at")
             serializer = FilmMakerSerializer(film_makers, many=True)
             return Response(
                 {"success": True, "data": serializer.data}, status=status.HTTP_200_OK

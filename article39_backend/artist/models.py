@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import uuid
 
 
 class Artist(models.Model):
@@ -9,15 +10,25 @@ class Artist(models.Model):
         primary_key=True,
         related_name="artist_profile",
     )
-    artist_info = models.OneToOneField(
+    singer_musician_info = models.OneToOneField(
         "form.Artist",
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         related_name="artist_info",
+        null=True,
+        blank=True,
     )
+    filmmaker_info = models.OneToOneField(
+        "form.Filmmaker",
+        on_delete=models.DO_NOTHING,
+        related_name="filmmaker_info",
+        null=True,
+        blank=True,
+    )
+    is_verified = models.BooleanField(default=False)
 
 
 class Song(models.Model):
-    id = models.UUIDField(primary_key=True, editable=False)
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
     artist = models.ForeignKey(
         Artist,
         on_delete=models.CASCADE,

@@ -26,4 +26,3 @@ class GigSerializer(serializers.ModelSerializer):
     class Meta:
         model = Gig
         fields = "__all__"
-        read_only_fields = ["artist"]

@@ -1,6 +1,5 @@
 from django.shortcuts import render
 from rest_framework.views import APIView, Response, status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 from rest_framework.pagination import PageNumberPagination
 
@@ -20,7 +19,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 class AuthenticateOnlyArtist(BasePermission):
     def has_permission(self, request, view):
         if request.user and request.user.is_authenticated:
-            if request.user.is_artist:
+            if request.user.is_artist and request.user.artist_profile.is_verified:
                 return True
             else:
                 return False

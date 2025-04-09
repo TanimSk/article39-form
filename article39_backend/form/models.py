@@ -7,6 +7,7 @@ from datetime import datetime
 from form.validator import validate_budget_breakdown
 
 
+# Singer and Musician
 class Artist(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
 
@@ -36,7 +37,7 @@ class Artist(models.Model):
     )
 
     # Contact Details
-    email = models.EmailField(unique=True, blank=True, null=True)
+    email = models.EmailField(unique=True)
     mobile_number = models.CharField(max_length=15, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
@@ -90,6 +91,8 @@ class Artist(models.Model):
     # Payment Preferences
     preferred_payment_method = models.CharField(max_length=255, blank=True, null=True)
 
+    created_at = models.DateTimeField(auto_now_add=True)
+
     def save(self, *args, **kwargs):
         if self.email == "":
             self.email = None  # Convert empty string to NULL
@@ -107,7 +110,8 @@ class FilmMaker(models.Model):
     budget_breakdown = models.JSONField()
     payment_terms = models.JSONField()
     additional_details = models.JSONField()
-    
+    created_at = models.DateTimeField(auto_now_add=True)
+
     def clean(self):
         self.validate_basic_info()
         self.validate_project_info()
@@ -118,59 +122,111 @@ class FilmMaker(models.Model):
         self.validate_additional_details()
 
     def validate_basic_info(self):
-        required_keys = ["full_name_en", "full_name_bn", "dob", "gender", "email", "phone", "address", "district", "post_office", "postal_code"]
+        required_keys = [
+            "full_name_en",
+            "full_name_bn",
+            "dob",
+            "gender",
+            "email",
+            "phone",
+            "address",
+            "district",
+            "post_office",
+            "postal_code",
+        ]
+
         if self.basic_info:
             for key in required_keys:
                 if key not in self.basic_info:
                     raise ValidationError(f"Missing '{key}' in basic_info.")
-            
+
+            # must have an email, which is unique and valid
+            email = self.basic_info.get("email")            
+            if email:
+                if not isinstance(email, str) or "@" not in email:
+                    raise ValidationError(
+                        "The 'email' field must be a valid email address."
+                    )
+                if FilmMaker.objects.filter(basic_info__email=email).exists():
+                    raise ValidationError("The 'email' field must be unique.")
+            else:
+                raise ValidationError("The 'email' field is required.")
+
             dob = self.basic_info.get("dob")
             if dob:
                 try:
                     datetime.strptime(dob, "%Y-%m-%d")
                 except ValueError:
-                    raise ValidationError("The 'dob' field must be a valid date in YYYY-MM-DD format.")
+                    raise ValidationError(
+                        "The 'dob' field must be a valid date in YYYY-MM-DD format."
+                    )
 
     def validate_project_info(self):
         if self.project_info:
-            if not all(key in self.project_info for key in ["project_title", "company_name"]):
-                raise ValidationError("Project info must include 'project_title' and 'company_name'.")
+            if not all(
+                key in self.project_info for key in ["project_title", "company_name"]
+            ):
+                raise ValidationError(
+                    "Project info must include 'project_title' and 'company_name'."
+                )
 
     def validate_primary_contact_info(self):
         if self.primary_contact_info:
-            if not all(key in self.primary_contact_info for key in ["contact_name", "email", "phone"]):
-                raise ValidationError("Primary contact info must include 'contact_name', 'email', and 'phone'.")
+            if not all(
+                key in self.primary_contact_info
+                for key in ["contact_name", "email", "phone"]
+            ):
+                raise ValidationError(
+                    "Primary contact info must include 'contact_name', 'email', and 'phone'."
+                )
 
     def validate_production_overview(self):
         if self.production_overview:
-            if not all(key in self.production_overview for key in ["genre", "est_runtime", "expected_shoot_days"]):
-                raise ValidationError("Production overview must include 'genre', 'est_runtime', and 'expected_shoot_days'.")
+            if not all(
+                key in self.production_overview
+                for key in ["genre", "est_runtime", "expected_shoot_days"]
+            ):
+                raise ValidationError(
+                    "Production overview must include 'genre', 'est_runtime', and 'expected_shoot_days'."
+                )
             if "locations" in self.production_overview:
-                if not all(isinstance(loc, dict) and "type" in loc and "location" in loc for loc in self.production_overview["locations"]):
-                    raise ValidationError("Each location in production overview must be a dictionary with 'type' and 'location'.")
-    
+                if not all(
+                    isinstance(loc, dict) and "type" in loc and "location" in loc
+                    for loc in self.production_overview["locations"]
+                ):
+                    raise ValidationError(
+                        "Each location in production overview must be a dictionary with 'type' and 'location'."
+                    )
+
     def validate_budget_breakdown(self):
         if self.budget_breakdown:
             try:
                 validate_budget_breakdown(self.budget_breakdown)
             except ValidationError as e:
                 raise ValidationError(f"Budget Breakdown Error: {e}")
-    
+
     def validate_payment_terms(self):
         if self.payment_terms:
-            if "total_budget" not in self.payment_terms or "payment_schedule" not in self.payment_terms:
-                raise ValidationError("Payment terms must include 'total_budget' and 'payment_schedule'.")
-    
+            if (
+                "total_budget" not in self.payment_terms
+                or "payment_schedule" not in self.payment_terms
+            ):
+                raise ValidationError(
+                    "Payment terms must include 'total_budget' and 'payment_schedule'."
+                )
+
     def validate_additional_details(self):
         if self.additional_details:
-            if "note" not in self.additional_details or "attachments" not in self.additional_details:
-                raise ValidationError("Additional details must include 'note' and 'attachments'.")
+            if (
+                "note" not in self.additional_details
+                or "attachments" not in self.additional_details
+            ):
+                raise ValidationError(
+                    "Additional details must include 'note' and 'attachments'."
+                )
             if not isinstance(self.additional_details.get("attachments"), list):
                 raise ValidationError("Attachments must be a list.")
 
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
-
-
-
