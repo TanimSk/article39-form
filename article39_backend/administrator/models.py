@@ -20,20 +20,3 @@ class Gig(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
-# gigs -> users can apply for gigs
-# admin -> approve/reject gigs
-class GigApplication(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="application_user"
-    )
-    gig = models.ForeignKey(Gig, on_delete=models.CASCADE, related_name="applications")
-    status = models.CharField(
-        max_length=50,
-        choices=[
-            ("PENDING", "Pending"),
-            ("APPROVED", "Approved"),
-            ("REJECTED", "Rejected"),
-        ],
-        default="PENDING",
-    )
-    applied_at = models.DateTimeField(auto_now_add=True)

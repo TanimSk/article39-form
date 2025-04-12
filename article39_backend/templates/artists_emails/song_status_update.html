@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Song Enlisting Status - ART.39</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 40px 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #121212;
+            padding: 40px;
+            border-radius: 10px;
+            border: 1px solid #2d2d2d;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            color: #e74c3c;
+            margin: 0;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 22px;
+            color: #ffffff;
+            margin-bottom: 30px;
+        }
+
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: rgb(194, 194, 194);
+        }
+
+        .credentials {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #333;
+            color: #fff;
+        }
+
+        .credentials p {
+            margin: 0 0 10px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            text-align: center;
+            color: #aaaaaa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>1972 <span style="color: #e74c3c;">ART.39</span></h1>
+        </div>
+        <div class="title">Song Status Update</div>
+        <div class="content">
+            <p>Hi {{ user_name }},</p>
+            <p>
+                {% if song_status == "APPROVED" %}
+                We are excited to inform you that your song <b>{{ song_title }}</b> has been approved.
+                {% elif song_status == "REJECTED" %}
+                We regret to inform you that your song <b>{{ song_title }}</b> has been rejected. Please contact the admin
+                for more details.
+                {% endif %}
+            </p>
+        </div>
+        <div class="footer">
+            &copy; 2025 ART.39. All rights reserved.
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,6 +1,7 @@
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
 from administrator.models import Gig
+from artist.serializers import GigApplicationSerializer
 
 
 class CustomPasswordChangeSerializer(serializers.Serializer):
@@ -26,3 +27,25 @@ class GigSerializer(serializers.ModelSerializer):
     class Meta:
         model = Gig
         fields = "__all__"
+
+    def to_representation(self, instance):
+        # Call the parent method to get the base representation of the instance
+        instance_rep = super().to_representation(instance)
+
+        # Get the request from the context
+        request = self.context.get("request")
+
+        # Check if the user is authenticated
+        if request and request.user.is_authenticated:
+            # Serialize the related GigApplication instances for the current user
+            applications = GigApplicationSerializer(
+                instance.applications.filter(user=request.user.artist_profile),
+                many=True,
+                context=self.context,
+            ).data
+            instance_rep["applications"] = applications
+        else:
+            # If the user is not authenticated, set applications to an empty list
+            instance_rep["applications"] = []
+
+        return instance_rep

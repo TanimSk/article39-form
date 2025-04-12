@@ -2,9 +2,15 @@ from django.shortcuts import render
 from rest_framework.views import APIView, Response, status
 from rest_framework.permissions import BasePermission
 from rest_framework.pagination import PageNumberPagination
+from administrator.models import Gig
+from django.utils import timezone
 
 # serializers
-from artist.serializers import SongSerializer
+from artist.serializers import SongSerializer, PaymentSerializer
+from administrator.serializers import GigSerializer
+
+# models
+from artist.models import GigApplication, Payment
 
 
 # Pagination Config
@@ -15,11 +21,15 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_query_param = "p"
 
 
-# Authenticate User Only Class
+# Authenticate User Only Class (only for artist [musician/singer])
 class AuthenticateOnlyArtist(BasePermission):
     def has_permission(self, request, view):
         if request.user and request.user.is_authenticated:
-            if request.user.is_artist and request.user.artist_profile.is_verified:
+            if (
+                request.user.is_artist
+                and request.user.artist_profile.is_verified
+                and request.user.artist_profile.singer_musician_info
+            ):
                 return True
             else:
                 return False
@@ -75,4 +85,145 @@ class EnlistSongAPIView(APIView):
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(queryset, request)
         serializer = SongSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    def delete(self, request, *args, **kwargs):
+        if not request.GET.get("id"):
+            return Response(
+                {"success": False, "message": "Song ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        song = request.user.artist_profile.songs.filter(
+            id=request.GET.get("id")
+        ).first()
+        if song:
+            song.delete()
+            return Response(
+                {"success": True, "message": "Song deleted successfully."},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            return Response(
+                {"success": False, "message": "Song not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+class GigAPIView(APIView):
+    permission_classes = [AuthenticateOnlyArtist]
+
+    def get(self, request, *args, **kwargs):
+
+        gig_instances = Gig.objects.filter(
+            datetime__gte=timezone.localtime(timezone.now())
+        ).order_by("datetime")
+
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(gig_instances, request)
+        serializer = GigSerializer(page, many=True, context={"request": request})
+        return paginator.get_paginated_response(serializer.data)
+
+    # apply for gig
+    def post(self, request, *args, **kwargs):
+        if not "song_id" in request.data:
+            return Response(
+                {"success": False, "message": "Song ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not "gig_id" in request.data:
+            return Response(
+                {"success": False, "message": "Gig ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # check given audio is approved
+        if not request.user.artist_profile.songs.filter(
+            id=request.data["song_id"], status="APPROVED"
+        ).exists():
+            return Response(
+                {
+                    "success": False,
+                    "message": "Audio is not approved. Please contact admin.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # check if already applied
+        if GigApplication.objects.filter(
+            user=request.user.artist_profile,
+            gig_id=request.data["gig_id"],
+            song_id=request.data["song_id"],
+        ).exists():
+            return Response(
+                {"success": False, "message": "Already applied for this gig."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        GigApplication.objects.create(
+            user=request.user.artist_profile,
+            gig_id=request.data["gig_id"],
+            song_id=request.data["song_id"],
+        )
+        return Response(
+            {"success": True, "message": "Applied for gig successfully."},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class PaymentAPIView(APIView):
+    permission_classes = [AuthenticateOnlyArtist]
+    serializer = PaymentSerializer
+
+    def post(self, request, *args, **kwargs):
+        serialized_data = self.serializer(data=request.data)
+        if serialized_data.is_valid(raise_exception=True):
+            # validate the gig
+            if not Gig.objects.filter(
+                id=serialized_data.validated_data["gig"].id, 
+                datetime__gte=timezone.localtime(timezone.now()),
+                applications__user=request.user.artist_profile,
+            ).exists():
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Invalid Gig",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # check if this payment exists
+            if Payment.objects.filter(
+                gig=serialized_data.validated_data["gig"].id,
+                user=request.user.artist_profile,
+            ).exists():
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Payment already exists for this gig.",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            serialized_data.save(user=request.user.artist_profile)
+            return Response(
+                {"success": True, "message": "Payment request sent!"},
+                status=status.HTTP_201_CREATED,
+            )
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("action") == "get-gigs":
+            gig_id = (
+                Gig.objects.filter(applications__user=request.user.artist_profile, payment_gig__isnull=True)                                
+                .distinct()
+                .values("id", "title")
+            )
+            return Response(
+                {"success": True, "gigs": gig_id},
+                status=status.HTTP_200_OK,
+            )
+
+        payment_instances = Payment.objects.filter(user=request.user.artist_profile)
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(payment_instances, request)
+        serializer = self.serializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)

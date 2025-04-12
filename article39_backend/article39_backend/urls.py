@@ -5,10 +5,11 @@ from dj_rest_auth.registration.views import VerifyEmailView
 from rest_framework_simplejwt.views import TokenVerifyView
 from dj_rest_auth.views import (
     PasswordResetConfirmView,
-    PasswordResetView,    
+    PasswordResetView,
 )
 from administrator.auth_view import LoginWthPermission, CustomPasswordChangeView
 from django.views.generic import TemplateView
+from utils import UploadFile
 
 
 urlpatterns = [
@@ -45,6 +46,7 @@ urlpatterns = [
     path("get-access-token/", TokenRefreshView.as_view(), name="get-access-token"),
     path("api/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     # ---------- End Auth ----------
+    path("file-upload/", UploadFile.as_view(), name="file_upload"),
     path("form/", include("form.urls")),
     path("artist/", include("artist.urls")),
     path("administrator/", include("administrator.urls")),

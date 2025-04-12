@@ -1,5 +1,10 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.conf import settings
 from rest_framework.views import exception_handler
 from django.shortcuts import render
+import requests
 import threading
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
@@ -74,6 +79,30 @@ def send_login_credentials(
     ).start()
 
 
+def send_song_status_update(
+    song_title: str,
+    user_name: str,
+    status: str,
+    email: str,
+):
+    html_content = render_to_string(
+        "artists_emails/song_status_update.html",
+        {
+            "song_title": song_title,
+            "user_name": user_name,
+            "song_status": status,
+        },
+    )
+    subject = f"Song Status Update - {song_title}"
+
+    EmailThread(
+        subject,
+        html_content,
+        [email],
+        EMAIL_HOST_USER,
+    ).start()
+
+
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
@@ -90,3 +119,42 @@ def custom_exception_handler(exc, context):
         response.data = {"success": False, "message": "\n".join(plain_errors)}
 
     return response
+
+
+# file upload
+class UploadFile(APIView):
+    def post(self, request):
+        file = request.FILES.get("file")
+        if not file:
+            return Response(
+                {"success": False, "message": "No file provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        url = "https://transfer.ongshak.com/upload/"
+        params = {
+            "key": settings.TRANSFER_ONGSHAK_API_KEY,
+            "path": "article39",
+        }
+
+        # if file size exceeds 20MB, return error
+        if file.size > 20 * 1024 * 1024:
+            return Response(
+                {"success": False, "message": "File size exceeds 20MB"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # if file size is an image, and greater than 2MB, set compression level to 50
+        if file.size > 2 * 1024 * 1024 and file.name.lower().endswith(
+            (".jpg", ".jpeg", ".png")
+        ):
+            params["compression_level"] = "50"
+
+        response = requests.post(url, params=params, files={"file": file})
+        return Response(
+            {
+                "success": True,
+                **response.json(),
+            },
+            status=status.HTTP_201_CREATED,
+        )
