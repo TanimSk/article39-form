@@ -14,4 +14,7 @@ article39_backend/artist/migrations/*
 article39_backend/administrator/migrations/*
 !article39_backend/administrator/migrations/__init__.py
 
+article39_backend/client_secret.json
+article39_backend/uploaders.py-oauth2.json
+
 venv
