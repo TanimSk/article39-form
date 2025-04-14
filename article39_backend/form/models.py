@@ -97,6 +97,9 @@ class Artist(models.Model):
         if self.email == "":
             self.email = None  # Convert empty string to NULL
         super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.full_name_english} ({self.email})"
 
 
 class FilmMaker(models.Model):

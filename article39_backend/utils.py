@@ -84,6 +84,7 @@ def send_song_status_update(
     user_name: str,
     status: str,
     email: str,
+    youtube_link: str = "",
 ):
     html_content = render_to_string(
         "artists_emails/song_status_update.html",
@@ -91,6 +92,7 @@ def send_song_status_update(
             "song_title": song_title,
             "user_name": user_name,
             "song_status": status,
+            "youtube_link": youtube_link,
         },
     )
     subject = f"Song Status Update - {song_title}"

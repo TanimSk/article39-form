@@ -14,7 +14,7 @@ article39_backend/artist/migrations/*
 article39_backend/administrator/migrations/*
 !article39_backend/administrator/migrations/__init__.py
 
-media_utilities/client_secret.json
-media_utilities/uploaders.py-oauth2.json
+article39_backend/media_utilities/client_secret.json
+article39_backend/media_utilities/youtube_uploader.py-oauth2.json
 
 venv

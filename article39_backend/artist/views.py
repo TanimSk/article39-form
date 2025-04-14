@@ -4,13 +4,16 @@ from rest_framework.permissions import BasePermission
 from rest_framework.pagination import PageNumberPagination
 from administrator.models import Gig
 from django.utils import timezone
+from media_utilities.song_analytics_extractor import YouTubeVideoFetcher
 
 # serializers
-from artist.serializers import SongSerializer, PaymentSerializer
+from artist.serializers import SongSerializer, PaymentSerializer, DocumentsSerializer
 from administrator.serializers import GigSerializer
 
 # models
 from artist.models import GigApplication, Payment
+from django.utils import timezone
+from django.db.models import Sum
 
 
 # Pagination Config
@@ -34,6 +37,55 @@ class AuthenticateOnlyArtist(BasePermission):
             else:
                 return False
         return False
+
+
+class DashboardAPIView(APIView):
+    permission_classes = [AuthenticateOnlyArtist]
+
+    def get(self, request, *args, **kwargs):
+
+        UPDATE_YOUTUBE_STATS_THRESHOLD = 10  # in seconds
+        song_music_instance = request.user.artist_profile.songs.all()
+
+        # get all uploaded songs
+        uploaded_song_musics = song_music_instance.filter(
+            status="APPROVED", upload_status="UPLOADED"
+        ).order_by("-added_at")
+        
+        # check if youtube stats are updated
+        if uploaded_song_musics.first().updated_at < timezone.localtime(
+            timezone.now()
+        ) - timezone.timedelta(seconds=UPDATE_YOUTUBE_STATS_THRESHOLD):
+            # update youtube stats
+            YouTubeVideoFetcher(uploaded_song_musics).start()
+            print("✅ YouTube stats updated.")
+
+        response_data = {
+            "approved_song_musics": song_music_instance.filter(
+                status="APPROVED"
+            ).count(),
+            "pending_song_musics": song_music_instance.filter(status="PENDING").count(),
+            "rejected_song_musics": song_music_instance.filter(
+                status="REJECTED"
+            ).count(),
+            "applied_gigs": GigApplication.objects.filter(
+                user=request.user.artist_profile
+            ).count(),
+            # total likes, comments, views
+            **uploaded_song_musics.aggregate(
+                total_likes=Sum("youtube_like_count"),
+                total_comments=Sum("youtube_comment_count"),
+                total_views=Sum("youtube_view_count"),
+            ),
+        }
+
+        return Response(
+            {
+                "success": True,
+                "data": response_data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class EnlistSongAPIView(APIView):
@@ -82,6 +134,7 @@ class EnlistSongAPIView(APIView):
         else:
             queryset = request.user.artist_profile.songs.all()
 
+        queryset = queryset.order_by("-added_at")
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(queryset, request)
         serializer = SongSerializer(page, many=True)
@@ -180,7 +233,7 @@ class PaymentAPIView(APIView):
         if serialized_data.is_valid(raise_exception=True):
             # validate the gig
             if not Gig.objects.filter(
-                id=serialized_data.validated_data["gig"].id, 
+                id=serialized_data.validated_data["gig"].id,
                 datetime__gte=timezone.localtime(timezone.now()),
                 applications__user=request.user.artist_profile,
             ).exists():
@@ -213,7 +266,10 @@ class PaymentAPIView(APIView):
     def get(self, request, *args, **kwargs):
         if request.GET.get("action") == "get-gigs":
             gig_id = (
-                Gig.objects.filter(applications__user=request.user.artist_profile, payment_gig__isnull=True)                                
+                Gig.objects.filter(
+                    applications__user=request.user.artist_profile,
+                    payment_gig__isnull=True,
+                )
                 .distinct()
                 .values("id", "title")
             )
@@ -227,3 +283,16 @@ class PaymentAPIView(APIView):
         page = paginator.paginate_queryset(payment_instances, request)
         serializer = self.serializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+
+class DocumentsAPIView(APIView):
+    permission_classes = [AuthenticateOnlyArtist]
+    serializer = DocumentsSerializer
+
+    def get(self, request, *args, **kwargs):
+        serilizer = self.serializer(
+            request.user.artist_profile.singer_musician_info.documents
+        )
+        return Response(
+            {"success": True, "documents": serilizer.data}, status=status.HTTP_200_OK
+        )

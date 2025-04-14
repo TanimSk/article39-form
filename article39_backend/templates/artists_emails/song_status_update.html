@@ -80,8 +80,12 @@
             <p>
                 {% if song_status == "APPROVED" %}
                 We are excited to inform you that your song <b>{{ song_title }}</b> has been approved.
+                Your song has been uploaded to our youtube channel, Here is the link:
+                <br>
+                <a href="{{ youtube_link }}">{{ youtube_link }}</a>
                 {% elif song_status == "REJECTED" %}
-                We regret to inform you that your song <b>{{ song_title }}</b> has been rejected. Please contact the admin
+                We regret to inform you that your song <b>{{ song_title }}</b> has been rejected. Please contact the
+                admin
                 for more details.
                 {% endif %}
             </p>

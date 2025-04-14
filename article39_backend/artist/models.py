@@ -1,9 +1,11 @@
 from django.db.models.signals import post_save
-from django.dispatch import receiver
-from utils import send_song_status_update
+# from django.dispatch import receiver
+# from utils import send_song_status_update
 from django.db import models
 from django.conf import settings
 import uuid
+from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 
 
 class Artist(models.Model):
@@ -112,6 +114,8 @@ class Song(models.Model):
     )
     title = models.CharField(max_length=255)
     audio_url = models.URLField()
+    thumbnail_url = models.URLField()
+
     duration = models.IntegerField(blank=True, null=True)
     GENRE = (
         ("pop", "Pop"),
@@ -127,21 +131,53 @@ class Song(models.Model):
         ("APPROVED", "Approved"),
         ("REJECTED", "Rejected"),
     )
+
+    # song upload status
+    UPLOAD_STATUS = (
+        ("NOT_UPLOADED", "Not Uploaded"),
+        ("PROCESSING", "Processing"),
+        ("UPLOADING", "Uploading"),
+        ("UPLOADED", "Uploaded"),
+    )
+    upload_status = models.CharField(
+        max_length=50, choices=UPLOAD_STATUS, default="NOT_UPLOADED"
+    )
+    youtube_url = models.URLField(blank=True, null=True)
+    youtube_video_id = models.CharField(max_length=255, blank=True, null=True)
+    youtube_like_count = models.IntegerField(blank=True, null=True)
+    youtube_comment_count = models.IntegerField(blank=True, null=True)
+    youtube_view_count = models.IntegerField(blank=True, null=True)
+
     status = models.CharField(max_length=50, choices=STATUS, default="PENDING")
     added_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
-# django signal on song status change
-@receiver(post_save, sender=Song)
-def song_status_change(sender, instance, created, **kwargs):
-    if not created:
-        # If the song status is changed
-        if instance.status != "PENDING":
-            # Send email to the artist
-            send_song_status_update(
-                song_title=instance.title,
-                user_name=instance.artist.singer_musician_info.full_name_english,
-                status=instance.status,
-                email=instance.artist.artist.email,
-            )
-            print("email sent!")
+def validate_document(item):
+    if not isinstance(item, dict):
+        raise ValidationError("Each item must be a JSON object.")
+    if "document_type" not in item or "document_url" not in item:
+        raise ValidationError(
+            "Each item must contain 'document_type' and 'document_url'."
+        )
+    if not isinstance(item["document_type"], str):
+        raise ValidationError("'document_type' must be a string.")
+    if not isinstance(item["document_url"], str):
+        raise ValidationError("'document_url' must be a string.")
+
+
+class Documents(models.Model):
+    artist = models.OneToOneField(
+        Artist,
+        on_delete=models.CASCADE,
+        related_name="documents",
+    )
+    documents = ArrayField(
+        base_field=models.JSONField(validators=[validate_document]),
+        blank=True,
+        default=list,
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.artist.artist.username}"

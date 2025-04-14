@@ -14,9 +14,13 @@ import random
 import time
 import os
 import sys
+from utils import send_song_status_update
+from pathlib import Path
+
 
 class YouTubeVideoUploader(threading.Thread):
-    CLIENT_SECRETS_FILE = "./client_secret.json"
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, "media_utilities/client_secret.json")
     YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
     YOUTUBE_API_SERVICE_NAME = "youtube"
     YOUTUBE_API_VERSION = "v3"
@@ -25,22 +29,39 @@ class YouTubeVideoUploader(threading.Thread):
     RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError)
     RETRIABLE_STATUS_CODES = [500, 502, 503, 504]
 
-    def __init__(self, image_url, audio_url, title, description, tags):
+    def __init__(
+        self,
+        description: str,
+        tags: list,
+        song_instance=None,
+    ):
         super().__init__()
-        self.image_url = image_url
-        self.audio_url = audio_url
-        self.title = title
+        self.image_url = song_instance.thumbnail_url if song_instance else None
+        self.audio_url = song_instance.audio_url if song_instance else None
+        self.title = song_instance.title if song_instance else None
         self.description = description
         self.tags = tags
+        self.user_name = song_instance.artist.singer_musician_info.full_name_english
+        self.status = song_instance.status
+        self.email = song_instance.artist.artist.email
+        self.instance = song_instance
 
     def run(self):
         try:
+
+            # update the song instance to processing
+            self.instance.upload_status = "PROCESSING"
+            self.instance.save()
+
             image_data = self.download_to_memory(self.image_url)
             audio_data = self.download_to_memory(self.audio_url)
             print("[✓] Downloaded audio and image to memory")
 
             video_path = self.create_video_in_memory(image_data, audio_data)
             print(f"[✓] Video created: {video_path}")
+
+            self.instance.upload_status = "UPLOADING"
+            self.instance.save()
 
             self.upload_to_youtube(
                 video_path=video_path,
@@ -58,7 +79,9 @@ class YouTubeVideoUploader(threading.Thread):
         response.raise_for_status()
         return BytesIO(response.content)
 
-    def create_video_in_memory(self, image_bytesio: BytesIO, audio_bytesio: BytesIO) -> str:
+    def create_video_in_memory(
+        self, image_bytesio: BytesIO, audio_bytesio: BytesIO
+    ) -> str:
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as img_file:
             img_file.write(image_bytesio.read())
             image_path = img_file.name
@@ -71,8 +94,11 @@ class YouTubeVideoUploader(threading.Thread):
         output_path = output_file.name
         output_file.close()
 
-        image_input = ffmpeg.input(image_path, loop=1)
+        image_input = ffmpeg.input(image_path, loop=1, framerate=1)
         audio_input = ffmpeg.input(audio_path)
+
+        # Apply scaling filter to ensure even dimensions
+        image_input = image_input.filter("scale", "trunc(iw/2)*2", "trunc(ih/2)*2")
 
         (
             ffmpeg.output(
@@ -83,6 +109,7 @@ class YouTubeVideoUploader(threading.Thread):
                 acodec="aac",
                 pix_fmt="yuv420p",
                 shortest=None,
+                preset="ultrafast"
             ).run(overwrite_output=True)
         )
 
@@ -92,8 +119,14 @@ class YouTubeVideoUploader(threading.Thread):
         return output_path
 
     def get_authenticated_service(self):
-        flow = flow_from_clientsecrets(self.CLIENT_SECRETS_FILE, scope=self.YOUTUBE_UPLOAD_SCOPE)
-        storage = Storage("%s-oauth2.json" % os.path.basename(__file__))
+        flow = flow_from_clientsecrets(
+            self.CLIENT_SECRETS_FILE, scope=self.YOUTUBE_UPLOAD_SCOPE
+        )
+        storage = Storage(
+            os.path.join(
+                self.BASE_DIR, "media_utilities/youtube_uploader.py-oauth2.json"
+            )
+        )
         credentials = storage.get()
 
         if credentials is None or credentials.invalid:
@@ -105,7 +138,9 @@ class YouTubeVideoUploader(threading.Thread):
             http=credentials.authorize(httplib2.Http()),
         )
 
-    def upload_to_youtube(self, video_path, title, description, tags, category_id="10", privacy="public"):
+    def upload_to_youtube(
+        self, video_path, title, description, tags, category_id="10", privacy="public"
+    ):
         youtube = self.get_authenticated_service()
 
         body = dict(
@@ -135,6 +170,23 @@ class YouTubeVideoUploader(threading.Thread):
                 if response is not None:
                     if "id" in response:
                         print(f"[✓] Video uploaded: https://youtu.be/{response['id']}")
+                        send_song_status_update(
+                            song_title=self.instance.title,
+                            user_name=self.user_name,
+                            status="APPROVED",
+                            email=self.email,
+                            youtube_link=f"https://youtu.be/{response['id']}",
+                        )
+
+                        # update the song instance with the youtube url
+                        self.instance.upload_status = "UPLOADED"
+                        self.instance.youtube_url = f"https://youtu.be/{response['id']}"
+                        self.instance.youtube_video_id = response["id"]
+                        self.instance.youtube_like_count = 0
+                        self.instance.youtube_comment_count = 0
+                        self.instance.youtube_view_count = 0
+                        self.instance.save()
+
                     else:
                         sys.exit(f"[✗] Upload failed: {response}")
             except Exception as e:
@@ -154,84 +206,13 @@ class YouTubeVideoUploader(threading.Thread):
                 time.sleep(sleep)
 
 
-class SoundCloudUploader:
-    def __init__(self, client_id, client_secret, redirect_uri="http://localhost:8080/callback"):
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.redirect_uri = redirect_uri
-        self.access_token = None
-
-    def authenticate(self):
-        # Step 1: Generate the authorization URL
-        params = {
-            'client_id': self.client_id,
-            'response_type': 'code',
-            'redirect_uri': self.redirect_uri,
-            'scope': '*',
-            'display': 'popup'
-        }
-        authorize_url = f"https://soundcloud.com/connect?{urlencode(params)}"
-
-        print("\n🔗 Please open this URL in your browser and authorize the app:")
-        print(authorize_url)
-
-        # Step 2: Prompt for redirected URL
-        redirected_url = input("\n🔁 After authorization, paste the full redirected URL here:\n> ")
-
-        # Step 3: Extract the 'code' from the URL
-        parsed_url = urlparse(redirected_url)
-        code = parse_qs(parsed_url.query).get("code")
-        if not code:
-            print("❌ No code found in the URL.")
-            return
-        code = code[0]
-
-        # Step 4: Exchange code for access token
-        token_url = "https://api.soundcloud.com/oauth2/token"
-        token_data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'redirect_uri': self.redirect_uri,
-            'grant_type': 'authorization_code',
-            'code': code
-        }
-
-        response = requests.post(token_url, data=token_data)
-        response.raise_for_status()
-        self.access_token = response.json()['access_token']
-        print("✅ Access token received!")
-
-    def upload_track(self, file_path, title="Untitled Track", sharing="public"):
-        if not self.access_token:
-            print("❌ Please authenticate first.")
-            return
-
-        def upload():
-            print(f"\n🚀 Uploading '{title}'...")
-            url = "https://api.soundcloud.com/tracks"
-            headers = {'Authorization': f'OAuth {self.access_token}'}
-            files = {
-                'track[title]': (None, title),
-                'track[asset_data]': open(file_path, 'rb'),
-                'track[sharing]': (None, sharing),
-            }
-
-            response = requests.post(url, headers=headers, files=files)
-            if response.status_code == 201:
-                track_url = response.json().get('permalink_url')
-                print(f"✅ Upload successful: {track_url}")
-            else:
-                print(f"❌ Upload failed: {response.status_code} - {response.text}")
-
-        thread = threading.Thread(target=upload)
-        thread.start()
-
-
 # Example usage
 if __name__ == "__main__":
     image_url = "https://transfer.ongshak.com/uploads/article39/a0e8ed6b-35bf-41bd-aa66-54e0c4dabf6c_15803682.png"
     audio_url = "https://transfer.ongshak.com/uploads/test/f2662291-9fcb-4bac-8968-13d96e66eb29_file_example_MP3_5MG.mp3"
 
-    uploader = YouTubeVideoUploader(image_url, audio_url, "Test Title", "Test Description", ["test", "video"])
+    uploader = YouTubeVideoUploader(
+        image_url, audio_url, "Test Title", "Test Description", ["test", "video"]
+    )
     uploader.start()
     print("[→] Background upload started.")
