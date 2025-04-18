@@ -14,9 +14,16 @@ article39_backend/artist/migrations/*
 article39_backend/administrator/migrations/*
 !article39_backend/administrator/migrations/__init__.py
 
+article39_backend/website/migrations/*
+!article39_backend/website/migrations/__init__.py
+
 article39_backend/media_utilities/client_secret.json
 article39_backend/media_utilities/youtube_uploader.py-oauth2.json
 
 article39_backend/staticfiles
 
 venv
+Include
+Lib
+Scripts
+pyvenv.cfg

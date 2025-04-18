@@ -50,4 +50,5 @@ urlpatterns = [
     path("form/", include("form.urls")),
     path("artist/", include("artist.urls")),
     path("administrator/", include("administrator.urls")),
+    path("web-api/", include("website.urls")),
 ]
