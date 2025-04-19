@@ -123,10 +123,10 @@ DATABASES = {
         "NAME": "article39",
         "USER": os.getenv("USERNAME_DB"),
         "PASSWORD": os.getenv("PASSWORD_DB"),
-        "HOST": "localhost",
-        # "HOST": "pg-3890bda5-bigtdevs-test-1.f.aivencloud.com",
-        "PORT": "",
-        # "PORT": "16397"
+        # "HOST": "localhost",
+        "HOST": "pg-3890bda5-bigtdevs-test-1.f.aivencloud.com",
+        # "PORT": "",
+        "PORT": "16397"
     }
 }
 

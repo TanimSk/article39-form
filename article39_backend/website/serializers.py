@@ -25,11 +25,6 @@ class ExhibitionsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exhibitions
         fields = '__all__'
-        
-class ExhibitionsSerializerShort(serializers.ModelSerializer):
-    class Meta:
-        model = Exhibitions
-        fields = ['id', 'title', 'cover_image', 'date', 'from_time', 'to_time', 'location', 'author', 'created_at']
 
 class CouraselImagesSerializer(serializers.ModelSerializer):
     class Meta:

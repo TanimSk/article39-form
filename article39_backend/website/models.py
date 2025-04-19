@@ -195,7 +195,15 @@ class ShowBookingInformation(models.Model):
     full_name = models.TextField(max_length=1000, blank=False, null=False)
     email = models.EmailField(max_length=1000, blank=False, null=False)
     phone = models.TextField(max_length=1000, blank=False, null=False)
-    dates = models.JSONField(validators=[validate_show_bookings_date_range], default=list, blank=False, null=False)
+    dates = models.JSONField(validators=[validate_show_bookings_date_range], blank=False, null=False)
+    # Genre: Folk, Classical, Hip-hop, Electronic Music/DJ, Acoustic
+    genre = models.CharField(max_length=255, blank=False, null=False, choices=[
+        ('Folk', 'Folk'),
+        ('Classical', 'Classical'),
+        ('Hip-hop', 'Hip-hop'),
+        ('Electronic Music/DJ', 'Electronic Music/DJ'),
+        ('Acoustic', 'Acoustic'),
+    ], default='Folk')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
