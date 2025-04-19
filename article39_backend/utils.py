@@ -153,6 +153,9 @@ class UploadFile(APIView):
             params["compression_level"] = "50"
 
         response = requests.post(url, params=params, files={"file": file})
+
+        print(response.text)
+
         return Response(
             {
                 "success": True,
