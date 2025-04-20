@@ -42,7 +42,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://article39-api.ongshak.com",
     "https://artist-onboarding-form.vercel.app",
     "https://art-39-website-g8nasgk8t-ongshaktechs-projects.vercel.app",
-    "https://art-39-website.vercel.app/",
+    "https://art-39-website.vercel.app",
 ]
 
 
