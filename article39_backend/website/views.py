@@ -6,6 +6,15 @@ from .serializers import ShowsSerializer, EventsSerializer, ExhibitionsSerialize
 
 from django.conf import settings
 
+# Middleware for checking if the user has admin permission
+def check_admin(request):
+    if request.user and request.user.is_authenticated:
+        if request.user.is_admin:
+            return True
+        else:
+            return False
+    return False
+
 class CouraselImagesView(APIView):
     def get(self, request, *args, **kwargs):
         courasel_images = CouraselImages.objects.filter(selected=True).order_by("-created_at")
@@ -15,6 +24,11 @@ class CouraselImagesView(APIView):
         )
     
     def post(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = CouraselImagesSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -27,6 +41,11 @@ class CouraselImagesView(APIView):
         )
     
     def put(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         # Update selected status of Courasel images
         courasel_image_id = request.data.get("id", None)
         if courasel_image_id:
@@ -48,6 +67,11 @@ class CouraselImagesView(APIView):
             )
     
     def delete(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         # Delete Courasel image
         courasel_image_id = request.data.get("id", None)
         if courasel_image_id:
@@ -102,6 +126,11 @@ class StoriesView(APIView):
             )
     
     def post(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = StoriesSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -114,6 +143,11 @@ class StoriesView(APIView):
         )
     
     def put(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         # Update Courasel image
         story_id = request.data.get("id", None)
         if story_id:
@@ -139,6 +173,11 @@ class StoriesView(APIView):
             )
     
     def delete(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         # Delete Story with specified ID
         story_id = request.data.get("id", None)
         if story_id:
@@ -194,6 +233,11 @@ class EventsView(APIView):
             )
     
     def post(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = EventsSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -239,6 +283,11 @@ class TicketBookingsView(APIView):
             )
     
     def post(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = TicketBookingsSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -284,6 +333,11 @@ class ExhibitionsView(APIView):
             )
     
     def post(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = ExhibitionsSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -330,6 +384,11 @@ class AlbumView(APIView):
             )
     
     def post(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = AlbumsSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -375,6 +434,11 @@ class SinglesView(APIView):
             )
     
     def post(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = SinglesSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -420,6 +484,11 @@ class ShowsView(APIView):
             )
     
     def post(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = ShowsSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -466,6 +535,11 @@ class ShowBookingInformationView(APIView):
             )
     
     def post(self, request):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = ShowBookingInformationSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
