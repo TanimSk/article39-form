@@ -249,6 +249,62 @@ class EventsView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    def put(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        event_id = request.GET.get("id", None)
+        if event_id:
+            try:
+                event = Events.objects.get(id=event_id)
+                event.title = request.data.get("title", event.title)
+                event.description = request.data.get("description", event.description)
+                event.cover_image = request.data.get("cover_image", event.cover_image)
+                event.ticket_price = request.data.get("ticket_price", event.ticket_price)
+                event.date = request.data.get("date", event.date)
+                event.location = request.data.get("location", event.location)
+                event.save()
+                serializer = EventsSerializer(event)
+                return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
+            except Events.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Event not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No event ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    def delete(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        event_id = request.GET.get("id", None)
+        if event_id:
+            try:
+                Events.objects.get(id=event_id).delete()
+                return Response(
+                    {"success": True, "message": "Event deleted"},
+                    status=status.HTTP_200_OK,
+                )
+            except Events.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Event not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No event ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
 class TicketBookingsView(APIView):
     def get(self, request, *args, **kwargs):
         ticket_booking_id = request.GET.get("id", None)
@@ -298,6 +354,60 @@ class TicketBookingsView(APIView):
             {"success": False, "message": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    
+    def put(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        ticket_booking_id = request.GET.get("id", None)
+        if ticket_booking_id:
+            try:
+                ticket_booking = TicketBookings.objects.get(id=ticket_booking_id)
+                ticket_booking.event = request.data.get("event", ticket_booking.event)
+                ticket_booking.buyer_name = request.data.get("buyer_name", ticket_booking.buyer_name)
+                ticket_booking.buyer_email = request.data.get("buyer_email", ticket_booking.buyer_email)
+                ticket_booking.buyer_phone = request.data.get("buyer_phone", ticket_booking.buyer_phone)
+                ticket_booking.number_of_tickets = request.data.get("number_of_tickets", ticket_booking.number_of_tickets)
+                ticket_booking.save()
+                serializer = TicketBookingsSerializer(ticket_booking)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except TicketBookings.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Ticket booking not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No ticket booking ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
+    def delete(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        ticket_booking_id = request.GET.get("id", None)
+        if ticket_booking_id:
+            try:
+                TicketBookings.objects.get(id=ticket_booking_id).delete()
+                return Response(
+                    {"success": True, "message": "Ticket booking deleted"},
+                    status=status.HTTP_200_OK,
+                )
+            except TicketBookings.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Ticket booking not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No ticket booking ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 class ExhibitionsView(APIView):
     def get(self, request, *args, **kwargs):
@@ -348,6 +458,64 @@ class ExhibitionsView(APIView):
             {"success": False, "message": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    
+    def put(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        exhibition_id = request.GET.get("id", None)
+        if exhibition_id:
+            try:
+                exhibition = Exhibitions.objects.get(id=exhibition_id)
+                exhibition.title = request.data.get("title", exhibition.title)
+                exhibition.description = request.data.get("description", exhibition.description)
+                exhibition.cover_image = request.data.get("cover_image", exhibition.cover_image)
+                exhibition.date = request.data.get("date", exhibition.date)
+                exhibition.from_time = request.data.get("from_time", exhibition.from_time)
+                exhibition.to_time = request.data.get("to_time", exhibition.to_time)
+                exhibition.location = request.data.get("location", exhibition.location)
+                exhibition.tags = request.data.get("tags", exhibition.tags)
+                exhibition.author = request.data.get("author", exhibition.author)
+                exhibition.save()
+                serializer = ExhibitionsSerializer(exhibition)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Exhibitions.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Exhibition not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No exhibition ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
+    def delete(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        exhibition_id = request.GET.get("id", None)
+        if exhibition_id:
+            try:
+                Exhibitions.objects.get(id=exhibition_id).delete()
+                return Response(
+                    {"success": True, "message": "Exhibition deleted"},
+                    status=status.HTTP_200_OK,
+                )
+            except Exhibitions.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Exhibition not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No exhibition ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class AlbumView(APIView):
@@ -399,6 +567,64 @@ class AlbumView(APIView):
             {"success": False, "message": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    
+    def put(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        album_id = request.GET.get("id", None)
+        if album_id:
+            try:
+                album = Albums.objects.get(id=album_id)
+                album.title = request.data.get("title", album.title)
+                album.description = request.data.get("description", album.description)
+                album.cover_image = request.data.get("cover_image", album.cover_image)
+                album.genre = request.data.get("genre", album.genre)
+                album.category = request.data.get("category", album.category)
+                album.artist = request.data.get("artist", album.artist)
+                album.number_of_songs = request.data.get("number_of_songs", album.number_of_songs)
+                album.author = request.data.get("author", album.author)
+                album.tags = request.data.get("tags", album.tags)
+                album.save()
+                serializer = AlbumsSerializer(album)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Albums.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Album not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No album ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
+    def delete(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        album_id = request.GET.get("id", None)
+        if album_id:
+            try:
+                Albums.objects.get(id=album_id).delete()
+                return Response(
+                    {"success": True, "message": "Album deleted"},
+                    status=status.HTTP_200_OK,
+                )
+            except Albums.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Album not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No album ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 class SinglesView(APIView):
     def get(self, request, *args, **kwargs):
@@ -450,6 +676,64 @@ class SinglesView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    def put(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        single_id = request.GET.get("id", None)
+        if single_id:
+            try:
+                single = Singles.objects.get(id=single_id)
+                single.title = request.data.get("title", single.title)
+                single.description = request.data.get("description", single.description)
+                single.cover_image = request.data.get("cover_image", single.cover_image)
+                single.genre = request.data.get("genre", single.genre)
+                single.category = request.data.get("category", single.category)
+                single.artist = request.data.get("artist", single.artist)
+                single.number_of_songs = request.data.get("number_of_songs", single.number_of_songs)
+                single.author = request.data.get("author", single.author)
+                single.tags = request.data.get("tags", single.tags)
+                single.save()
+                serializer = SinglesSerializer(single)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Singles.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Single not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No single ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
+    def delete(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        single_id = request.GET.get("id", None)
+        if single_id:
+            try:
+                Singles.objects.get(id=single_id).delete()
+                return Response(
+                    {"success": True, "message": "Single deleted"},
+                    status=status.HTTP_200_OK,
+                )
+            except Singles.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Single not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No single ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
 class ShowsView(APIView):
     def get(self, request, *args, **kwargs):
         show_id = request.GET.get("id", None)
@@ -499,6 +783,61 @@ class ShowsView(APIView):
             {"success": False, "message": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    
+    def put(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        show_id = request.GET.get("id", None)
+        if show_id:
+            try:
+                show = Shows.objects.get(id=show_id)
+                show.title = request.data.get("title", show.title)
+                show.cover_image = request.data.get("cover_image", show.cover_image)
+                show.video_url = request.data.get("video_url", show.video_url)
+                show.location = request.data.get("location", show.location)
+                show.time = request.data.get("time", show.time)
+                show.date = request.data.get("date", show.date)
+                show.save()
+                serializer = ShowsSerializer(show)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Shows.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Show not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No show ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
+    def delete(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        show_id = request.GET.get("id", None)
+        if show_id:
+            try:
+                Shows.objects.get(id=show_id).delete()
+                return Response(
+                    {"success": True, "message": "Show deleted"},
+                    status=status.HTTP_200_OK,
+                )
+            except Shows.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Show not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No show ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class ShowBookingInformationView(APIView):
@@ -550,4 +889,58 @@ class ShowBookingInformationView(APIView):
             {"success": False, "message": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    
+    def put(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        show_booking_information_id = request.GET.get("id", None)
+        if show_booking_information_id:
+            try:
+                show_booking_information = ShowBookingInformation.objects.get(id=show_booking_information_id)
+                show_booking_information.full_name = request.data.get("full_name", show_booking_information.full_name)
+                show_booking_information.email = request.data.get("email", show_booking_information.email)
+                show_booking_information.phone = request.data.get("phone", show_booking_information.phone)
+                show_booking_information.dates = request.data.get("dates", show_booking_information.dates)
+                show_booking_information.genre = request.data.get("genre", show_booking_information.genre)
+                show_booking_information.save()
+                serializer = ShowBookingInformationSerializer(show_booking_information)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except ShowBookingInformation.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Show booking information not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No show booking information ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
+    def delete(self, request, *args, **kwargs):
+        if not check_admin(request):
+            return Response(
+                {"success": False, "message": "You are not authorized to perform this action"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        show_booking_information_id = request.GET.get("id", None)
+        if show_booking_information_id:
+            try:
+                ShowBookingInformation.objects.get(id=show_booking_information_id).delete()
+                return Response(
+                    {"success": True, "message": "Show booking information deleted"},
+                    status=status.HTTP_200_OK,
+                )
+            except ShowBookingInformation.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Show booking information not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"success": False, "message": "No show booking information ID provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
