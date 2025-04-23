@@ -148,8 +148,7 @@ class StoriesView(APIView):
                 {"success": False, "message": "You are not authorized to perform this action"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        # Update Courasel image
-        story_id = request.data.get("id", None)
+        story_id = request.GET.get("id", None)
         if story_id:
             try:
                 story = Stories.objects.get(id=story_id)
@@ -179,7 +178,7 @@ class StoriesView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         # Delete Story with specified ID
-        story_id = request.data.get("id", None)
+        story_id = request.GET.get("id", None)
         if story_id:
             try:
                 Stories.objects.get(id=story_id).delete()
