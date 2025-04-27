@@ -179,21 +179,32 @@ class GigAPIView(APIView):
                 )
             gig_instance = Gig.objects.filter(
                 id=request.GET.get("gig-id"),
-                datetime__gte=timezone.localtime(timezone.now()),
             ).first()
             if not gig_instance:
                 return Response(
                     {"success": False, "message": "Gig not found."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-            
-            # serializer = SongSerializer(
-            #     Song.objects.filter(
-            #         artist=request.user.artist_profile,
-            #         status="APPROVED",
 
-            # )
+            used_song_ids = GigApplication.objects.filter(
+                gig_id=request.GET.get("gig-id"),
+                song__isnull=False,  # song might be nullable, so better to check
+            ).values_list("song_id", flat=True)
 
+            # Step 2: Get songs that are NOT in the used_song_ids
+            available_songs = Song.objects.filter(
+                artist=request.user.artist_profile,
+                status="APPROVED",
+            ).exclude(id__in=used_song_ids)
+            # Step 3: Serialize the available songs
+            serializer = SongSerializer(available_songs, many=True)
+            return Response(
+                {
+                    "success": True,
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
 
         gig_instances = Gig.objects.filter(
             datetime__gte=timezone.localtime(timezone.now())
