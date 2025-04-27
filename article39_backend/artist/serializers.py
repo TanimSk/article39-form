@@ -25,7 +25,7 @@ class GigApplicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GigApplication
-        fields = ["user", "gig", "status", "applied_at"]
+        fields = ["user", "gig", "status", "applied_at", "song_music_details"]
         read_only_fields = ["id", "user", "applied_at"]
 
 
