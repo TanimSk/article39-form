@@ -11,7 +11,7 @@ from artist.serializers import SongSerializer, PaymentSerializer, DocumentsSeria
 from administrator.serializers import GigSerializer
 
 # models
-from artist.models import GigApplication, Payment
+from artist.models import GigApplication, Payment, Song
 from django.utils import timezone
 from django.db.models import Sum
 
@@ -171,6 +171,29 @@ class GigAPIView(APIView):
     permission_classes = [AuthenticateOnlyArtist]
 
     def get(self, request, *args, **kwargs):
+        if request.GET.get("action") == "get-list":
+            if not request.GET.get("gig-id"):
+                return Response(
+                    {"success": False, "message": "Gig ID is required."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            gig_instance = Gig.objects.filter(
+                id=request.GET.get("gig-id"),
+                datetime__gte=timezone.localtime(timezone.now()),
+            ).first()
+            if not gig_instance:
+                return Response(
+                    {"success": False, "message": "Gig not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            
+            # serializer = SongSerializer(
+            #     Song.objects.filter(
+            #         artist=request.user.artist_profile,
+            #         status="APPROVED",
+
+            # )
+
 
         gig_instances = Gig.objects.filter(
             datetime__gte=timezone.localtime(timezone.now())
@@ -183,9 +206,12 @@ class GigAPIView(APIView):
 
     # apply for gig
     def post(self, request, *args, **kwargs):
-        if not "song_id" in request.data:
+        if not "song_ids" in request.data and type(request.data["song_ids"]) != list:
             return Response(
-                {"success": False, "message": "Song ID is required."},
+                {
+                    "success": False,
+                    "message": "Song IDs is required. Must be a list of IDs.",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not "gig_id" in request.data:
@@ -194,34 +220,38 @@ class GigAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # check given audio is approved
-        if not request.user.artist_profile.songs.filter(
-            id=request.data["song_id"], status="APPROVED"
-        ).exists():
-            return Response(
-                {
-                    "success": False,
-                    "message": "Audio is not approved. Please contact admin.",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        for song_id in request.data["song_ids"]:
+            # check given audio is approved
+            if not request.user.artist_profile.songs.filter(
+                id=song_id, status="APPROVED"
+            ).exists():
+                return Response(
+                    {
+                        "success": False,
+                        "message": f"Audio is not approved. Please contact admin. Song/Music ID: {song_id}",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        # check if already applied
-        if GigApplication.objects.filter(
-            user=request.user.artist_profile,
-            gig_id=request.data["gig_id"],
-            song_id=request.data["song_id"],
-        ).exists():
-            return Response(
-                {"success": False, "message": "Already applied for this gig."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            # check if already applied
+            if GigApplication.objects.filter(
+                user=request.user.artist_profile,
+                gig_id=request.data["gig_id"],
+                song_id=song_id,
+            ).exists():
+                return Response(
+                    {
+                        "success": False,
+                        "message": f"Already applied for this gig. Song/Music ID: {song_id}",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        GigApplication.objects.create(
-            user=request.user.artist_profile,
-            gig_id=request.data["gig_id"],
-            song_id=request.data["song_id"],
-        )
+            GigApplication.objects.create(
+                user=request.user.artist_profile,
+                gig_id=request.data["gig_id"],
+                song_id=song_id,
+            )
         return Response(
             {"success": True, "message": "Applied for gig successfully."},
             status=status.HTTP_201_CREATED,

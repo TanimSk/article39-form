@@ -21,9 +21,11 @@ class SongSerializer(serializers.ModelSerializer):
 
 
 class GigApplicationSerializer(serializers.ModelSerializer):
+    song_music_details = SongSerializer(source="song", read_only=True)
+
     class Meta:
         model = GigApplication
-        fields = ["id", "user", "gig", "status", "applied_at"]
+        fields = ["user", "gig", "status", "applied_at"]
         read_only_fields = ["id", "user", "applied_at"]
 
 
