@@ -294,9 +294,22 @@ class DocumentsAPIView(APIView):
     serializer = DocumentsSerializer
 
     def get(self, request, *args, **kwargs):
-        serilizer = self.serializer(
-            request.user.artist_profile.singer_musician_info.documents
-        )
+        if request.user.artist_profile and getattr(
+            request.user.artist_profile, "documents", None
+        ):
+            # ForeignKey exists, and documents exists too
+            documents = request.user.artist_profile.documents
+            # Now you can serialize or use documents safely
+        else:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Documents are not uploaded by admin",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serilizer = self.serializer(documents)
         return Response(
             {"success": True, "documents": serilizer.data}, status=status.HTTP_200_OK
         )

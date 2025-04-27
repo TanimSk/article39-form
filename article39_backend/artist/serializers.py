@@ -38,4 +38,4 @@ class DocumentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Documents
         fields = "__all__"
-        read_only_fields = ["id", "updated_at"]
+        read_only_fields = ["id", "updated_at", "artist"]
