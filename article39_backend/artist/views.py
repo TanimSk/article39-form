@@ -51,11 +51,15 @@ class DashboardAPIView(APIView):
         uploaded_song_musics = song_music_instance.filter(
             status="APPROVED", upload_status="UPLOADED"
         ).order_by("-added_at")
-        
+
         # check if youtube stats are updated
-        if uploaded_song_musics.first().updated_at < timezone.localtime(
-            timezone.now()
-        ) - timezone.timedelta(seconds=UPDATE_YOUTUBE_STATS_THRESHOLD):
+
+        if (
+            uploaded_song_musics.exists()
+            and uploaded_song_musics.first().updated_at
+            < timezone.localtime(timezone.now())
+            - timezone.timedelta(seconds=UPDATE_YOUTUBE_STATS_THRESHOLD)
+        ):
             # update youtube stats
             YouTubeVideoFetcher(uploaded_song_musics).start()
             print("✅ YouTube stats updated.")

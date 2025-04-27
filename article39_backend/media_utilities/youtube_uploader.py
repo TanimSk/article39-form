@@ -109,7 +109,7 @@ class YouTubeVideoUploader(threading.Thread):
                 acodec="aac",
                 pix_fmt="yuv420p",
                 shortest=None,
-                preset="ultrafast"
+                preset="ultrafast",
             ).run(overwrite_output=True)
         )
 
@@ -130,7 +130,23 @@ class YouTubeVideoUploader(threading.Thread):
         credentials = storage.get()
 
         if credentials is None or credentials.invalid:
-            credentials = run_flow(flow, storage, argparser.parse_args())
+            print("[!] Credentials missing or invalid. Starting OAuth flow.")
+            try:
+                import argparse
+
+                flags = argparse.Namespace(
+                    noauth_local_webserver=True, logging_level="ERROR"
+                )
+            except ImportError:
+                flags = None
+
+            credentials = run_flow(flow, storage, flags)
+
+        # Refresh the token if expired
+        if credentials.access_token_expired:
+            print("[!] Access token expired. Refreshing token...")
+            credentials.refresh(httplib2.Http())
+            storage.put(credentials)
 
         return build(
             self.YOUTUBE_API_SERVICE_NAME,
