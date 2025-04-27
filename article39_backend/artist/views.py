@@ -171,6 +171,7 @@ class GigAPIView(APIView):
     permission_classes = [AuthenticateOnlyArtist]
 
     def get(self, request, *args, **kwargs):
+
         if request.GET.get("action") == "get-list":
             if not request.GET.get("gig-id"):
                 return Response(
@@ -208,7 +209,19 @@ class GigAPIView(APIView):
 
         gig_instances = Gig.objects.filter(
             datetime__gte=timezone.localtime(timezone.now())
-        ).order_by("datetime")
+        )
+
+        if request.GET.get("action") == "my-gigs":
+            # applied gig ids
+            gig_ids = (
+                GigApplication.objects.filter(user=request.user.artist_profile)
+                .values_list("gig_id", flat=True)
+                .distinct()
+            )
+            gig_instances = gig_instances.filter(id__in=gig_ids)
+
+        # sort
+        gig_instances = gig_instances.order_by("-datetime")
 
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(gig_instances, request)
