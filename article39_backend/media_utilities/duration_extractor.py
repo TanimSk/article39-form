@@ -27,7 +27,7 @@ def get_audio_duration_from_url(url, callback):
             callback(None)
             return
 
-        duration = int(audio_streams[0]["duration"])
+        duration = int(float(audio_streams[0]["duration"]))
 
         print(f"Audio duration: {duration} seconds")
         callback(duration)
