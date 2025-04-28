@@ -181,6 +181,24 @@ class GigAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
 
+        if (
+            request.GET.get("action") == "calender"
+            and request.GET.get("month")
+            and request.GET.get("year")
+        ):
+            gig_dates = Gig.objects.filter(
+                datetime__month=int(request.GET.get("month")),
+                datetime__year=int(request.GET.get("year")),
+            ).values_list("datetime", flat=True)
+
+            return Response(
+                {
+                    "success": True,
+                    "dates": [date.strftime("%Y-%m-%d") for date in gig_dates],
+                },
+                status=status.HTTP_200_OK,
+            )
+
         if request.GET.get("action") == "get-list":
             if not request.GET.get("gig-id"):
                 return Response(
@@ -247,6 +265,14 @@ class GigAPIView(APIView):
         else:
             # for all gigs
             gig_instances = gig_instances.order_by("-datetime")
+
+
+        # filter by month
+        if request.GET.get("month") and request.GET.get("year"):
+            gig_instances = gig_instances.filter(
+                datetime__month=int(request.GET.get("month")),
+                datetime__year=int(request.GET.get("year"))
+            )
 
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(gig_instances, request)
