@@ -260,7 +260,7 @@ class GigAPIView(APIView):
                     status=status.HTTP_200_OK,
                 )
 
-            gig_instances = gig_instances.filter(id__in=gig_ids).order_by("-applied_at")
+            gig_instances = gig_instances.filter(id__in=gig_ids).order_by("-datetime")
 
         else:
             # for all gigs
