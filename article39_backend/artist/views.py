@@ -102,6 +102,7 @@ class EnlistSongAPIView(APIView):
         if serializer.is_valid(raise_exception=True):
             serializer.save(artist=request.user.artist_profile)
 
+            print("Song enlisted successfully. Now extracting audio duration.")
             # extract audio duration
             get_audio_duration_from_url_threaded
             (

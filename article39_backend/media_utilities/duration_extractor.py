@@ -47,6 +47,7 @@ def get_audio_duration_from_url(url, callback):
 
 
 def get_audio_duration_from_url_threaded(url, callback):
+    print("Starting thread to get audio duration...")
     thread = threading.Thread(target=get_audio_duration_from_url, args=(url, callback))
     thread.start()
 
