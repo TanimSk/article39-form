@@ -101,11 +101,9 @@ class EnlistSongAPIView(APIView):
         serializer = SongSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save(artist=request.user.artist_profile)
-
-            print("Song enlisted successfully. Now extracting audio duration.")
+            
             # extract audio duration
-            get_audio_duration_from_url_threaded
-            (
+            get_audio_duration_from_url_threaded(
                 serializer.validated_data["audio_url"],
                 lambda duration: serializer.instance.update_audio_duration(duration),
             )
@@ -268,14 +266,13 @@ class GigAPIView(APIView):
             # for all gigs
             gig_instances = gig_instances.order_by("-datetime")
 
-
         # filter by month
         if request.GET.get("month") and request.GET.get("year"):
             gig_instances = gig_instances.filter(
                 datetime__month=int(request.GET.get("month")),
-                datetime__year=int(request.GET.get("year"))
+                datetime__year=int(request.GET.get("year")),
             )
-        
+
         # filter by date
         if request.GET.get("date"):
             try:
@@ -283,7 +280,10 @@ class GigAPIView(APIView):
                 gig_instances = gig_instances.filter(datetime__date=date_obj)
             except ValueError:
                 return Response(
-                    {"success": False, "message": "Invalid date format. Use YYYY-MM-DD."},
+                    {
+                        "success": False,
+                        "message": "Invalid date format. Use YYYY-MM-DD.",
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
