@@ -6,6 +6,7 @@ from administrator.models import Gig
 from django.utils import timezone
 from media_utilities.song_analytics_extractor import YouTubeVideoFetcher
 from media_utilities.duration_extractor import get_audio_duration_from_url_threaded
+from datetime import datetime
 
 # serializers
 from artist.serializers import SongSerializer, PaymentSerializer, DocumentsSerializer
@@ -273,6 +274,17 @@ class GigAPIView(APIView):
                 datetime__month=int(request.GET.get("month")),
                 datetime__year=int(request.GET.get("year"))
             )
+        
+        # filter by date
+        if request.GET.get("date"):
+            try:
+                date_obj = datetime.strptime(request.GET.get("date"), "%Y-%m-%d").date()
+                gig_instances = gig_instances.filter(datetime__date=date_obj)
+            except ValueError:
+                return Response(
+                    {"success": False, "message": "Invalid date format. Use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(gig_instances, request)
