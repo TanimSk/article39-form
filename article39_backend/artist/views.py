@@ -5,6 +5,7 @@ from rest_framework.pagination import PageNumberPagination
 from administrator.models import Gig
 from django.utils import timezone
 from media_utilities.song_analytics_extractor import YouTubeVideoFetcher
+from media_utilities.duration_extractor import get_audio_duration_from_url_threaded
 
 # serializers
 from artist.serializers import SongSerializer, PaymentSerializer, DocumentsSerializer
@@ -99,6 +100,14 @@ class EnlistSongAPIView(APIView):
         serializer = SongSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save(artist=request.user.artist_profile)
+
+            # extract audio duration
+            get_audio_duration_from_url_threaded
+            (
+                serializer.validated_data["audio_url"],
+                lambda duration: serializer.instance.update_audio_duration(duration),
+            )
+
             return Response(
                 {
                     "success": True,
@@ -207,21 +216,37 @@ class GigAPIView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-        gig_instances = Gig.objects.filter(
-            datetime__gte=timezone.localtime(timezone.now())
-        )
+        gig_instances = Gig.objects.all()
 
         if request.GET.get("action") == "my-gigs":
-            # applied gig ids
+
+            # only applied gig ids
             gig_ids = (
                 GigApplication.objects.filter(user=request.user.artist_profile)
                 .values_list("gig_id", flat=True)
                 .distinct()
             )
-            gig_instances = gig_instances.filter(id__in=gig_ids)
 
-        # sort
-        gig_instances = gig_instances.order_by("-datetime")
+            if request.GET.get("id"):
+                # get single gig
+                try:
+                    gig_instances = gig_instances.get(id=request.GET.get("id"))
+                except Gig.DoesNotExist:
+                    return Response(
+                        {"success": False, "message": "Gig not found."},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+                serializer = GigSerializer(gig_instances, context={"request": request})
+                return Response(
+                    {"success": True, "data": serializer.data},
+                    status=status.HTTP_200_OK,
+                )
+
+            gig_instances = gig_instances.filter(id__in=gig_ids).order_by("-applied_at")
+
+        else:
+            # for all gigs
+            gig_instances = gig_instances.order_by("-datetime")
 
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(gig_instances, request)

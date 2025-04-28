@@ -152,6 +152,10 @@ class Song(models.Model):
     added_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def update_audio_duration(self, duration):
+        self.duration = duration
+        self.save(update_fields=['duration'])
+
 
 def validate_document(item):
     if not isinstance(item, dict):
