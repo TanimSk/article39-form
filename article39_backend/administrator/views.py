@@ -79,6 +79,17 @@ class GigAPIView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    def delete(self, request, *args, **kwargs):
+        gig = get_object_or_404(Gig, id=request.data.get("id"))
+        gig.delete()
+        return Response(
+            {
+                "success": True,
+                "message": "Gig deleted successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
 
 class SongMusicAPIView(APIView):
     permission_classes = [AuthenticateOnlyAdmin]
