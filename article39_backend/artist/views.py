@@ -194,7 +194,7 @@ class GigAPIView(APIView):
             return Response(
                 {
                     "success": True,
-                    "dates": [date.strftime("%Y-%m-%d") for date in gig_dates],
+                    "dates": [timezone.localtime(date).strftime("%Y-%m-%d") for date in gig_dates],
                 },
                 status=status.HTTP_200_OK,
             )
