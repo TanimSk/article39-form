@@ -101,7 +101,7 @@ class EnlistSongAPIView(APIView):
         serializer = SongSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save(artist=request.user.artist_profile)
-            
+
             # extract audio duration
             get_audio_duration_from_url_threaded(
                 serializer.validated_data["audio_url"],
@@ -194,7 +194,10 @@ class GigAPIView(APIView):
             return Response(
                 {
                     "success": True,
-                    "dates": [timezone.localtime(date).strftime("%Y-%m-%d") for date in gig_dates],
+                    "dates": [
+                        timezone.localtime(date).strftime("%Y-%m-%d")
+                        for date in gig_dates
+                    ],
                 },
                 status=status.HTTP_200_OK,
             )
@@ -344,6 +347,43 @@ class GigAPIView(APIView):
             {"success": True, "message": "Applied for gig successfully."},
             status=status.HTTP_201_CREATED,
         )
+
+    def delete(self, request, *args, **kwargs):
+        if not request.data.get("gig_id"):
+            return Response(
+                {"success": False, "message": "Gig ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not request.data.get("song_id"):
+            return Response(
+                {"success": False, "message": "Song ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            gig_application = GigApplication.objects.get(
+                user=request.user.artist_profile,
+                gig_id=request.data["gig_id"],
+                song_id=request.data["song_id"],
+            )
+            gig_application.delete()
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "Gig application deleted successfully.",
+                },
+                status=status.HTTP_200_OK,
+            )
+        except GigApplication.DoesNotExist:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "Gig application not found.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
 
 class PaymentAPIView(APIView):

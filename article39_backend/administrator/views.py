@@ -80,7 +80,7 @@ class GigAPIView(APIView):
         )
 
     def delete(self, request, *args, **kwargs):
-        gig = get_object_or_404(Gig, id=request.data.get("id"))
+        gig = get_object_or_404(Gig, id=request.GET.get("id"))
         gig.delete()
         return Response(
             {
