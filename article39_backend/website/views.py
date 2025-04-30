@@ -338,11 +338,6 @@ class TicketBookingsView(APIView):
             )
     
     def post(self, request):
-        if not check_admin(request):
-            return Response(
-                {"success": False, "message": "You are not authorized to perform this action"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         serializer = TicketBookingsSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -355,11 +350,6 @@ class TicketBookingsView(APIView):
         )
     
     def put(self, request, *args, **kwargs):
-        if not check_admin(request):
-            return Response(
-                {"success": False, "message": "You are not authorized to perform this action"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         ticket_booking_id = request.GET.get("id", None)
         if ticket_booking_id:
             try:
