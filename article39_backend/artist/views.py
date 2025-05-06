@@ -7,9 +7,16 @@ from django.utils import timezone
 from media_utilities.song_analytics_extractor import YouTubeVideoFetcher
 from media_utilities.duration_extractor import get_audio_duration_from_url_threaded
 from datetime import datetime
+from django.db.models import Q
+
 
 # serializers
-from artist.serializers import SongSerializer, PaymentSerializer, DocumentsSerializer
+from artist.serializers import (
+    SongSerializer,
+    PaymentSerializer,
+    DocumentsSerializer,
+    PaymentToGetSerializer,
+)
 from administrator.serializers import GigSerializer
 
 # models
@@ -151,7 +158,13 @@ class EnlistSongAPIView(APIView):
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(queryset, request)
         serializer = SongSerializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        return Response(
+            {
+                "success": True,
+                **paginator.get_paginated_response(serializer.data).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def delete(self, request, *args, **kwargs):
         if not request.GET.get("id"):
@@ -293,7 +306,13 @@ class GigAPIView(APIView):
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(gig_instances, request)
         serializer = GigSerializer(page, many=True, context={"request": request})
-        return paginator.get_paginated_response(serializer.data)
+        return Response(
+            {
+                "success": True,
+                **paginator.get_paginated_response(serializer.data).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     # apply for gig
     def post(self, request, *args, **kwargs):
@@ -394,21 +413,20 @@ class PaymentAPIView(APIView):
         serialized_data = self.serializer(data=request.data)
         if serialized_data.is_valid(raise_exception=True):
             # validate the gig
-            if not Gig.objects.filter(
-                id=serialized_data.validated_data["gig"].id,
-                datetime__gte=timezone.localtime(timezone.now()),
-                applications__user=request.user.artist_profile,
+            if not GigApplication.objects.filter(
+                id=serialized_data.validated_data["gig_application"].id,
+                user=request.user.artist_profile,
             ).exists():
                 return Response(
                     {
                         "success": False,
-                        "message": "Invalid Gig",
+                        "message": "Invalid Gig Application",
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             # check if this payment exists
             if Payment.objects.filter(
-                gig=serialized_data.validated_data["gig"].id,
+                gig_application=serialized_data.validated_data["gig_application"].id,
                 user=request.user.artist_profile,
             ).exists():
                 return Response(
@@ -426,25 +444,37 @@ class PaymentAPIView(APIView):
             )
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get("action") == "get-gigs":
-            gig_id = (
-                Gig.objects.filter(
-                    applications__user=request.user.artist_profile,
-                    payment_gig__isnull=True,
+        if request.GET.get("action") == "get-payments":
+            gig_application = (
+                GigApplication.objects.filter(user=request.user.artist_profile)
+                .filter(
+                    Q(payment_gig_application__isnull=True)
+                    | Q(payment_gig_application__status="DUE")
                 )
-                .distinct()
-                .values("id", "title")
+                .order_by("-applied_at")
             )
+            serializer = PaymentToGetSerializer(gig_application, many=True)
             return Response(
-                {"success": True, "gigs": gig_id},
+                {
+                    "success": True,
+                    "data": serializer.data,
+                },
                 status=status.HTTP_200_OK,
             )
 
-        payment_instances = Payment.objects.filter(user=request.user.artist_profile)
+        payment_instances = (
+            Payment.objects.filter(user=request.user.artist_profile)
+            .exclude(Q(status="DUE") | Q(status="REJECTED"))
+            .order_by("-created_at")
+        )
+
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(payment_instances, request)
         serializer = self.serializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        return Response(
+            {"success": True, **paginator.get_paginated_response(serializer.data).data},
+            status=status.HTTP_200_OK,
+        )
 
 
 class DocumentsAPIView(APIView):

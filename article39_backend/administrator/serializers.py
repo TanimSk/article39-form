@@ -1,7 +1,9 @@
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
+from artist.models import Payment
 from administrator.models import Gig
 from artist.serializers import GigApplicationSerializer
+from form.serializers import ArtistSerializer
 
 
 class CustomPasswordChangeSerializer(serializers.Serializer):
@@ -44,8 +46,34 @@ class GigSerializer(serializers.ModelSerializer):
                 context=self.context,
             ).data
             instance_rep["applications"] = applications
-        else:
-            # If the user is not authenticated, set applications to an empty list
-            instance_rep["applications"] = []
 
         return instance_rep
+
+
+class PaymentAdminSerializer(serializers.ModelSerializer):
+    user_info = serializers.SerializerMethodField()
+    gig_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payment
+        exclude = [
+            "gig_application",
+            "user",
+        ]
+        read_only_fields = [
+            "id",
+            "completed_at",            
+            "created_at",
+        ]
+
+    def get_user_info(self, obj):
+        # check if the user is singer or filmmaker
+        if hasattr(obj.user, "singer_musician_info"):
+            return ArtistSerializer(obj.user.singer_musician_info).data
+        elif hasattr(obj.user, "filmmaker_info"):
+            return {
+                "filmmaker": -1,
+            }
+
+    def get_gig_info(self, obj):
+        return GigSerializer(obj.gig_application.gig).data

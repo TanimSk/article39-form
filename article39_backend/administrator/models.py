@@ -16,6 +16,8 @@ class Gig(models.Model):
     id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
     title = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
+    min_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    max_payment = models.DecimalField(max_digits=10, decimal_places=2)
     datetime = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 

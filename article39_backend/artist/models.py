@@ -1,4 +1,5 @@
 from django.db.models.signals import post_save
+
 # from django.dispatch import receiver
 # from utils import send_song_status_update
 from django.db import models
@@ -38,6 +39,7 @@ class Artist(models.Model):
 # gigs -> users can apply for gigs
 # admin -> approve/reject gigs
 class GigApplication(models.Model):
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
     user = models.ForeignKey(
         Artist, on_delete=models.CASCADE, related_name="application_user"
     )
@@ -68,8 +70,12 @@ class Payment(models.Model):
     user = models.ForeignKey(
         Artist, on_delete=models.CASCADE, related_name="payment_user"
     )
-    gig = models.ForeignKey(
-        "administrator.Gig", on_delete=models.CASCADE, related_name="payment_gig"
+    gig_application = models.OneToOneField(
+        GigApplication,
+        on_delete=models.CASCADE,
+        related_name="payment_gig_application",
+        blank=True,
+        null=True,
     )
     STATUS = (
         ("DUE", "Due"),
@@ -78,7 +84,7 @@ class Payment(models.Model):
         ("REJECTED", "Rejected"),
     )
     status = models.CharField(max_length=50, choices=STATUS, default="DUE")
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
     PAYMENT_METHOD = (
         ("MOBILE", "Mobile"),
         ("BANK", "Bank"),
@@ -103,6 +109,10 @@ class Payment(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(blank=True, null=True)
+
+    # To be set by the admin
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+    document_url = models.URLField(blank=True, null=True)
 
 
 class Song(models.Model):
@@ -154,7 +164,7 @@ class Song(models.Model):
 
     def update_audio_duration(self, duration):
         self.duration = duration
-        self.save(update_fields=['duration'])
+        self.save(update_fields=["duration"])
 
 
 def validate_document(item):

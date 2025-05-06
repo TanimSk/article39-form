@@ -9,16 +9,17 @@ from utils import send_login_credentials, send_song_status_update
 from media_utilities.youtube_uploader import YouTubeVideoUploader
 
 # serializers
-from administrator.serializers import GigSerializer
-from artist.serializers import SongSerializer, DocumentsSerializer
+from administrator.serializers import GigSerializer, PaymentAdminSerializer
+from artist.serializers import SongSerializer, DocumentsSerializer, PaymentSerializer
 
 # models
 from administrator.models import Gig
-from artist.models import Artist, Song
+from artist.models import Artist, Song, Payment
 from form.models import Artist as FormArtist, FilmMaker
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
 from artist.models import Documents
+from django.utils import timezone
 
 
 # Pagination Config
@@ -49,7 +50,13 @@ class GigAPIView(APIView):
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(queryset, request)
         serializer = self.serializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        return Response(
+            {
+                "success": True,
+                **paginator.get_paginated_response(serializer.data).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer(data=request.data)
@@ -204,7 +211,13 @@ class SongMusicAPIView(APIView):
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(queryset, request)
         serializer = SongSerializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        return Response(
+            {
+                "success": True,
+                **paginator.get_paginated_response(serializer.data).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class DocumentsAPIView(APIView):
@@ -215,7 +228,13 @@ class DocumentsAPIView(APIView):
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(instances, request)
         serializer = DocumentsSerializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        return Response(
+            {
+                "success": True,
+                **paginator.get_paginated_response(serializer.data).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def post(self, request, *args, **kwargs):
         if not request.data.get("artist-id"):
@@ -296,6 +315,65 @@ class DocumentsAPIView(APIView):
         )
 
 
+class PaymentRequestAPIView(APIView):
+    permission_classes = [AuthenticateOnlyAdmin]
+
+    def post(self, request, *args, **kwargs):
+        if (
+            not request.data.get("id")
+            and request.data.get("status")
+            and request.data.get("amount")
+        ):
+            return Response(
+                {
+                    "success": False,
+                    "message": "Payment ID, status and amount are required.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            payment = Payment.objects.get(id=request.data.get("id"))
+        except Payment.DoesNotExist:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Payment not found.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        payment.status = request.data.get("status")
+        payment.amount = request.data.get("amount")
+        payment.document_url = request.data.get("document_url")
+        payment.save()
+
+        if payment.status == "COMPLETED":
+            payment.completed_at = timezone.localtime(timezone.now())
+            payment.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": f"Payment request status: {request.data.get('status')}",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def get(self, request, *args, **kwargs):
+        # get all payment requests
+        queryset = Payment.objects.filter(status="DUE").order_by("-created_at")
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = PaymentAdminSerializer(page, many=True)
+        return Response(
+            {
+                "success": True,
+                **paginator.get_paginated_response(serializer.data).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 # verify artist account
 class CreateArtistAccountAPIView(APIView):
     """
@@ -357,6 +435,16 @@ class CreateArtistAccountAPIView(APIView):
                     "message": f"Artist account {'activated' if request.data.get('verified') else 'deactivated'} successfully.",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # no account, and verified false, do nothing
+        elif not request.data.get("verified"):
+            return Response(
+                {
+                    "success": False,
+                    "message": f"Deactivated",
+                },
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         user_instance = get_user_model()

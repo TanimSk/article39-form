@@ -33,7 +33,34 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = "__all__"
-        read_only_fields = ["id", "status", "completed_at", "user", "created_at"]
+        read_only_fields = [
+            "id",
+            "status",
+            "completed_at",
+            "user",
+            "created_at",
+            "amount",
+        ]        
+
+
+class PaymentToGetSerializer(serializers.ModelSerializer):
+    gig_name = serializers.CharField(source="gig.title", read_only=True)
+    min_payment = serializers.DecimalField(
+        source="gig.min_payment", max_digits=10, decimal_places=2, read_only=True
+    )
+    max_payment = serializers.DecimalField(
+        source="gig.max_payment", max_digits=10, decimal_places=2, read_only=True
+    )
+    song_name = serializers.CharField(source="song.title", read_only=True)
+    payment_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GigApplication
+        fields = ["id", "status", "applied_at", "gig_name", "song_name", "min_payment", "max_payment", "payment_status"]
+
+    def get_payment_status(self, obj):
+        payment = getattr(obj, "payment_gig_application", None)
+        return payment.status if payment else "NOT_REQUESTED"
 
 
 class DocumentsSerializer(serializers.ModelSerializer):

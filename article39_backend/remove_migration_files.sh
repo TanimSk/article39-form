@@ -1,8 +1,11 @@
 #!/bin/bash
 
-echo "Deleting all Django migration files..."
+echo "🔍 Searching for Django migration files to delete..."
 
-find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
-find . -path "*/migrations/*.pyc" -delete
+# Find and delete all migration Python files except __init__.py
+find . -path "*/migrations/*.py" -not -name "__init__.py" -print -delete
 
-echo "All migration files (except __init__.py) have been deleted."
+# Find and delete all compiled migration Python files
+find . -path "*/migrations/*.pyc" -print -delete
+
+echo "✅ All migration files (except __init__.py) have been deleted."
