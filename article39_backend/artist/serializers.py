@@ -30,9 +30,7 @@ class GigApplicationSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    from administrator.serializers import GigSerializer
-
-    gig_info = GigSerializer(source="gig_application.gig", read_only=True)
+    gig_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
@@ -45,6 +43,13 @@ class PaymentSerializer(serializers.ModelSerializer):
             "created_at",
             "amount",
         ]
+
+    def get_gig_info(self, obj):
+        from administrator.serializers import GigSerializer  # Lazy import
+
+        if obj.gig_application and obj.gig_application.gig:
+            return GigSerializer(obj.gig_application.gig).data
+        return None
 
 
 class PaymentToGetSerializer(serializers.ModelSerializer):
