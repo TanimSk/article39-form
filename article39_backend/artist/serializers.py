@@ -31,7 +31,7 @@ class GigApplicationSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    gig_info = GigApplicationSerializer(source="gig_application.gig", read_only=True)
+    gig_info = GigSerializer(source="gig_application.gig", read_only=True)
 
     class Meta:
         model = Payment
