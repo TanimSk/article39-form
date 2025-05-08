@@ -1,6 +1,5 @@
 from artist.models import Song, Artist, GigApplication, Payment, Documents
 from rest_framework import serializers
-from administrator.serializers import GigSerializer
 
 
 class SongSerializer(serializers.ModelSerializer):
@@ -31,6 +30,8 @@ class GigApplicationSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
+    from administrator.serializers import GigSerializer
+
     gig_info = GigSerializer(source="gig_application.gig", read_only=True)
 
     class Meta:
@@ -43,8 +44,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "user",
             "created_at",
             "amount",
-        ]    
-
+        ]
 
 
 class PaymentToGetSerializer(serializers.ModelSerializer):
