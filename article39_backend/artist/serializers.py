@@ -1,5 +1,6 @@
 from artist.models import Song, Artist, GigApplication, Payment, Documents
 from rest_framework import serializers
+from administrator.serializers import GigSerializer
 
 
 class SongSerializer(serializers.ModelSerializer):
@@ -30,6 +31,8 @@ class GigApplicationSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
+    gig_info = GigApplicationSerializer(source="gig_application.gig", read_only=True)
+
     class Meta:
         model = Payment
         fields = "__all__"
@@ -40,7 +43,8 @@ class PaymentSerializer(serializers.ModelSerializer):
             "user",
             "created_at",
             "amount",
-        ]        
+        ]    
+
 
 
 class PaymentToGetSerializer(serializers.ModelSerializer):
@@ -56,7 +60,16 @@ class PaymentToGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GigApplication
-        fields = ["id", "status", "applied_at", "gig_name", "song_name", "min_payment", "max_payment", "payment_status"]
+        fields = [
+            "id",
+            "status",
+            "applied_at",
+            "gig_name",
+            "song_name",
+            "min_payment",
+            "max_payment",
+            "payment_status",
+        ]
 
     def get_payment_status(self, obj):
         payment = getattr(obj, "payment_gig_application", None)
